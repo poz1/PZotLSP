@@ -13,7 +13,8 @@ Build the language server
 
 Build and start Theia
 ```
-   yarn install &&
-   cd app &&
-   yarn start
+  yarn install && 
+  yarn rebuild:electron &&
+  cd pzot-electron &&
+  yarn start
 ```
