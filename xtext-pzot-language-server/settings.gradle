@@ -1,0 +1,2 @@
+include 'org.pzot.syntax'
+include 'org.pzot.syntax.ide'
