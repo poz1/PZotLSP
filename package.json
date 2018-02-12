@@ -1,6 +1,8 @@
 {
   "private": true,
   "scripts": {
+    "b:ext" : " cd xtext-pzot-extension/ && yarn prepare && cd ..",
+    "b:electron" : "yarn install &&    yarn rebuild:electron &&   cd pzot-electron &&   yarn start",
     "prepare": "lerna run prepare",
     "build": "lerna run build",
     "rebuild:browser": "theia rebuild:browser",
@@ -10,6 +12,12 @@
     "lerna": "2.4.0"
   },
   "workspaces": [
-    "xtext-pzot-extension", "pzot-browser", "pzot-electron"
-  ]
+    "xtext-pzot-extension",
+    "pzot-browser",
+    "pzot-electron"
+  ],
+  "dependencies": {
+    "@types/d3": "^5.0.0",
+    "d3": "^4.13.0"
+  }
 }
