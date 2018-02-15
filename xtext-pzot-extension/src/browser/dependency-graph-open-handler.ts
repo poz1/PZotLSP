@@ -34,7 +34,7 @@ export class PZotDependencyGraphOpenHandler implements OpenHandler {
 
     async open(uri: URI): Promise<PZotDependencyGraphWidget | undefined> {
         const widget = await this.getWidget(uri);
-        this.app.shell.addWidget(widget, {area: 'right'});
+        this.app.shell.addWidget(widget, {area: 'main'});
         return widget;
     }
 
@@ -59,7 +59,7 @@ export class PZotDependencyGraphOpenHandler implements OpenHandler {
         widget.title.label = `Dependency Graph of '${uri.path.base}'`;
         widget.title.caption = widget.title.label;
         widget.title.closable = true;
-        this.app.shell.addWidget(widget, {area: 'right'});
+        this.app.shell.addWidget(widget, {area: 'main'});
         return widget;
     }
 }

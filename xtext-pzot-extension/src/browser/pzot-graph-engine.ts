@@ -1,95 +1,106 @@
 import * as d3 from  'd3';
-import { color, ValueFn } from 'd3';
+import { color, ValueFn, SimulationLinkDatum, Numeric } from 'd3';
+
+import '../../src/browser/style/index.css';
 
 export class PZotGraphEngine {
 
-    protected readonly svg = d3.select("svg");
-    protected readonly width = +this.svg.attr("width");
-    protected readonly height = +this.svg.attr("height");
+    protected canvas: HTMLElement ;
+    protected graph: any ;
+    protected simulation: any ;
 
-    protected readonly color = d3.scaleOrdinal(d3.schemeCategory10);
+    protected  width: number;
+    protected  height: number ;
+    protected  color: any;
 
-    private parseGraph(text: string): any {
-        let regex = /(-p- \w)/g;
-        let nodes = text.match(regex);
+    private link: any;
+    private node: any;
+    private packLayout: any;
 
-        if (nodes != null) {
-            let node = this.svg.append("g")
-                .attr("class", "nodes")
-                .selectAll("circle")
-                .data(nodes)
-                .enter().append("circle")
-                .attr("r", 5);
-                // .attr("fill", d => return color(d.group); });
-                // .call(d3.drag()
-                //     .on("start", dragstarted)
-                //     .on("drag", dragged)
-                //     .on("end", dragended));
+    // Dependency Tree Structure
+    private data = {
+        "name": "A1",
+        "children": [
+          {
+            "name": "B1",
+            "children": [
+              {
+                "name": "C1",
+                "value": 100
+              },
+              {
+                "name": "C2",
+                "value": 300
+              },
+              {
+                "name": "C3",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "name": "B2",
+            "value": 200
+          }
+        ]
+      }
 
-        }
+    private root = d3.hierarchy(this.data);
+
+    constructor() {
+        this.color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    }
+
+    private generateCicrle(): void {
+        this.packLayout = d3.pack();
+        this.packLayout.size([300, 300]);
+
+        this.root.sum(function(d: any) {
+            return d.value;
+          });
+
+        this.packLayout(this.root);
+
+        d3.select('svg g')
+            .selectAll('circle')
+            .data(this.root.descendants())
+            .enter()
+            .append('circle')
+            .attr('cx', function(d: any) { return d.x; })
+            .attr('cy', function(d: any) { return d.y; })
+            .attr('r', function(d: any) { return d.r; })
+
+        let nodes = this.graph
+            .selectAll('g')
+            .data(this.root.descendants())
+            .enter()
+            .append('g')
+            .attr('transform', function(d: any) {return 'translate(' + [d.x, d.y] + ')'})
+
+        nodes.append('circle')
+            .attr('r', function(d: any) { return d.r; })
+
+        nodes.append('text')
+            .attr('dy', 4)
+            .text(function(d: any) {
+              return d.children === undefined ? d.data.name : '';
+            })
+
+        this.packLayout.padding(10)
     }
 
     public render(text: string): string {
 
-        //this.parseGraph(text);
+        this.canvas = document.createElement("svg");
+        this.canvas.setAttribute("height", "500px");
+        this.canvas.setAttribute("width", "500px");
 
-        // let simulation = d3.forceSimulation()
-        //     .force("link", d3.forceLink().id(function(d) { return d.id; }))
-        //     .force("charge", d3.forceManyBody())
-        //     .force("center", d3.forceCenter(width / 2, height / 2));
+        this.graph = d3.select(this.canvas);
 
-        // d3.json("miserables.json", function(error, graph) {
-        //   if (error) throw error;
+        this.generateCicrle();
 
-        //   let link = svg.append("g")
-        //       .attr("class", "links")
-        //     .selectAll("line")
-        //     .data(graph.links)
-        //     .enter().append("line")
-        //       .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
-
-        
-
-        //   node.append("title")
-        //       .text(function(d) { return d.id; });
-
-        //   simulation
-        //       .nodes(graph.nodes)
-        //       .on("tick", ticked);
-
-        //   simulation.force("link")
-        //       .links(graph.links);
-
-        //   function ticked() {
-        //     link
-        //         .attr("x1", function(d) { return d.source.x; })
-        //         .attr("y1", function(d) { return d.source.y; })
-        //         .attr("x2", function(d) { return d.target.x; })
-        //         .attr("y2", function(d) { return d.target.y; });
-
-        //     node
-        //         .attr("cx", function(d) { return d.x; })
-        //         .attr("cy", function(d) { return d.y; });
-        //   }
-        // });
-
-        // function dragstarted(d) {
-        //   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-        //   d.fx = d.x;
-        //   d.fy = d.y;
-        // }
-
-        // function dragged(d) {
-        //   d.fx = d3.event.x;
-        //   d.fy = d3.event.y;
-        // }
-
-        // function dragended(d) {
-        //   if (!d3.event.active) simulation.alphaTarget(0);
-        //   d.fx = null;
-        //   d.fy = null;
-        // }
-
-        return "<svg width='100%' height='100%'></svg>";
+        console.log(this.canvas.outerHTML);
+        return this.canvas.outerHTML;
     }
 }

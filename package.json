@@ -1,6 +1,7 @@
 {
   "private": true,
   "scripts": {
+    "b:all" : "yarn b:ext && yarn b:electron",
     "b:ext" : " cd xtext-pzot-extension/ && yarn prepare && cd ..",
     "b:electron" : "yarn install &&    yarn rebuild:electron &&   cd pzot-electron &&   yarn start",
     "prepare": "lerna run prepare",
