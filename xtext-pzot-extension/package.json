@@ -10,7 +10,8 @@
   ],
   "dependencies": {
     "@theia/core": "latest",
-    "@theia/languages": "latest"
+    "@theia/languages": "latest",
+    "@theia/preview": "latest"
   },
   "devDependencies": {
     "rimraf": "latest",
