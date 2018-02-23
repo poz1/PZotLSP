@@ -1,9 +1,9 @@
 {
   "private": true,
   "scripts": {
-    "b:all" : "yarn b:ext && yarn b:electron",
-    "b:ext" : " cd xtext-pzot-extension/ && yarn prepare && cd ..",
-    "b:electron" : "yarn install &&    yarn rebuild:electron &&   cd pzot-electron &&   yarn start",
+    "b:all": "yarn b:ext && yarn b:electron",
+    "b:ext": " cd xtext-pzot-extension/ && yarn prepare && cd ..",
+    "b:electron": "yarn install &&    yarn rebuild:electron &&   cd pzot-electron &&   yarn start",
     "prepare": "lerna run prepare",
     "build": "lerna run build",
     "rebuild:browser": "theia rebuild:browser",
@@ -18,7 +18,14 @@
     "pzot-electron"
   ],
   "dependencies": {
+    "@types/cytoscape": "^3.1.6",
     "@types/d3": "^5.0.0",
-    "d3": "^4.13.0"
+    "@types/dagre": "^0.7.39",
+    "cytoscape": "^3.2.9",
+    "d3": "^4.13.0",
+    "dagre": "^0.8.2",
+    "degree": "^1.1.1",
+    "graphdracula": "^1.2.0",
+    "raphael": "^2.2.7"
   }
 }

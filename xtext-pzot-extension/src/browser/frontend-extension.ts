@@ -6,8 +6,6 @@ import { PZotDependencyGraphOpenHandler } from "./dependency-graph-open-handler"
 import { OpenHandler } from "@theia/core/lib/browser";
 import { PZotGraphResourceResolver } from "./pzot-graph-resource";
 import { ResourceResolver } from "@theia/core";
-import { PreviewHandler } from '@theia/preview/lib/browser';
-import { PZotDiagramPreviewHandler } from "./pzot-diagram-preview-handler";
 
 export default new ContainerModule(bind => {
     bind<LanguageClientContribution>(LanguageClientContribution).to(DslClientContribution).inSingletonScope();
@@ -19,8 +17,5 @@ export default new ContainerModule(bind => {
 
     bind(PZotGraphResourceResolver).toSelf().inSingletonScope();
     bind(ResourceResolver).toDynamicValue(ctx => ctx.container.get(PZotGraphResourceResolver)).inSingletonScope();
-
-    bind(PZotDiagramPreviewHandler).toSelf().inSingletonScope();
-    bind(PreviewHandler).toDynamicValue(ctx => ctx.container.get(PZotDiagramPreviewHandler));
 });
 

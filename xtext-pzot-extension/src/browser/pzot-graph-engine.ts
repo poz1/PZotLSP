@@ -3,6 +3,7 @@ import { color, ValueFn, SimulationLinkDatum, Numeric } from 'd3';
 
 import '../../src/browser/style/index.css';
 import '../../src/browser/style/vis.min.css';
+import cytoscape = require('cytoscape');
 
 
 class Stack<T> {
@@ -56,6 +57,11 @@ export class PZotGraphEngine {
     private link: any;
     private node: any;
     private packLayout: any;
+    private loaded: boolean = false;
+    private rendered: boolean = false;
+    private widget: string = "";
+    private operatorRegex = /(?=\()\W\w+|(?=\()\W\W\W/;
+    private dependenciesRegex = /(?<=DEPENDENCIES\:)(.*?)(?=\s*FORMULA)/g;
 
     // Dependency Tree Structure
     private data = {
@@ -130,59 +136,59 @@ export class PZotGraphEngine {
         this.packLayout.padding(10)
     }
 
-    private generateTimeline(container: any) {
+    // private generateTimeline(container: any) {
 
-        // create a dataset with items
-        // we specify the type of the fields `start` and `end` here to be strings
-        // containing an ISO date. The fields will be outputted as ISO dates
-        // automatically getting data from the DataSet via items.get().
-        let items = new vis.DataSet({
-            type: { start: 'ISODate', end: 'ISODate' }
-        });
+    //     // create a dataset with items
+    //     // we specify the type of the fields `start` and `end` here to be strings
+    //     // containing an ISO date. The fields will be outputted as ISO dates
+    //     // automatically getting data from the DataSet via items.get().
+    //     let items = new vis.DataSet({
+    //         type: { start: 'ISODate', end: 'ISODate' }
+    //     });
 
-        // add items to the DataSet
-        items.add([
-            {id: 1, content: 'item 1<br>start', start: '2014-01-23'},
-            {id: 2, content: 'item 2', start: '2014-01-18'},
-            {id: 3, content: 'item 3', start: '2014-01-21'},
-            {id: 4, content: 'item 4', start: '2014-01-19', end: '2014-01-24'},
-            {id: 5, content: 'item 5', start: '2014-01-28', type: 'point'},
-            {id: 6, content: 'item 6', start: '2014-01-26'}
-        ]);
+    //     // add items to the DataSet
+    //     items.add([
+    //         {id: 1, content: 'item 1<br>start', start: '2014-01-23'},
+    //         {id: 2, content: 'item 2', start: '2014-01-18'},
+    //         {id: 3, content: 'item 3', start: '2014-01-21'},
+    //         {id: 4, content: 'item 4', start: '2014-01-19', end: '2014-01-24'},
+    //         {id: 5, content: 'item 5', start: '2014-01-28', type: 'point'},
+    //         {id: 6, content: 'item 6', start: '2014-01-26'}
+    //     ]);
 
-        // log changes to the console
-        items.on('*', function (event, properties) {
-            console.log(event, properties.items);
-        });
+    //     // log changes to the console
+    //     items.on('*', function (event, properties) {
+    //         console.log(event, properties.items);
+    //     });
 
-        // let container = document.getElementById('visualization');
-        let options = {
-            start: '2014-01-10',
-            end: '2014-02-10',
-            height: '100%',
+    //     // let container = document.getElementById('visualization');
+    //     let options = {
+    //         start: '2014-01-10',
+    //         end: '2014-02-10',
+    //         height: '100%',
 
-            // allow selecting multiple items using ctrl+click, shift+click, or hold.
-            multiselect: true,
+    //         // allow selecting multiple items using ctrl+click, shift+click, or hold.
+    //         multiselect: true,
 
-            // allow manipulation of items
-            editable: true,
+    //         // allow manipulation of items
+    //         editable: true,
 
-            /* alternatively, enable/disable individual actions:
+    //         /* alternatively, enable/disable individual actions:
 
-            editable: {
-            add: true,
-            updateTime: true,
-            updateGroup: true,
-            remove: true
-            },
+    //         editable: {
+    //         add: true,
+    //         updateTime: true,
+    //         updateGroup: true,
+    //         remove: true
+    //         },
 
-            */
+    //         */
 
-            showCurrentTime: true
-        };
+    //         showCurrentTime: true
+    //     };
 
-        let timeline = new vis.Timeline(container, items, options);
-    }
+    //     let timeline = new vis.Timeline(container, items, options);
+    // }
 
     private generateDAG(containter: any) {
         // set up SVG for D3
@@ -560,13 +566,45 @@ export class PZotGraphEngine {
             .on('keyup', keyup);
             restart();
         }
+    } 
+
+    private ticked(link: any, node: any): any {
+        link
+            .attr("x1", function(d: any) {
+                console.log("x1 - " + d.source.x);
+                return d.source.x;
+            })
+            .attr("y1", function(d: any) {
+                console.log("y1 - " + d.source.y);
+                return d.source.y;
+            })
+            .attr("x2", function(d: any) {
+                console.log("x2 - " + d.target.x);
+                return d.target.x;
+            })
+            .attr("y2", function(d: any) {
+                console.log("y2 - " + d.source.y);
+                return d.source.y;
+            });
+
+        node
+            .attr("cx", function(d: any) {
+                console.log("cx - " + d.x);
+                return d.x;
+            })
+            .attr("cy", function(d: any) {
+                console.log("cy - " + d.y)
+                return d.y;
+            });
+
+        console.log("ciaone - tic ");
     }
 
     private generateGraph(container: any) {
 
         // set up SVG for D3
-        let width  = 400;
-        let height = 400;
+        let width  = 800;
+        let height = 800;
 
         let svg = container.append('svg')
         .attr('width', width)
@@ -577,7 +615,7 @@ export class PZotGraphEngine {
         let simulation = d3.forceSimulation()
             .force("link", d3.forceLink().id(function(d: any) { return d.id; }))
             .force("charge", d3.forceManyBody())
-            .force("center", d3.forceCenter(200, 200));
+            .force("center", d3.forceCenter(width, height));
 
         let graph = {
             "nodes": [
@@ -917,6 +955,8 @@ export class PZotGraphEngine {
             ]
           };
 
+        
+        
         let link = svg.append("g")
             .attr("class", "links")
             .selectAll("line")
@@ -929,7 +969,9 @@ export class PZotGraphEngine {
             .selectAll("circle")
             .data(graph.nodes)
             .enter().append("circle")
-            .attr("r", 5)
+            .attr("r", 15)
+            .attr("cx", width / 2)
+            .attr("cy", height / 2)
             .attr("fill", function(d: any) { return color(d.group); })
             .call(d3.drag()
                 .on("start", dragstarted)
@@ -941,47 +983,15 @@ export class PZotGraphEngine {
 
         simulation
             .nodes(graph.nodes)
-            .on("tick", ticked);
+            .on("tick", this.ticked(link, node));
 
         if (simulation !== undefined) {
             let link: any = simulation.force("link");
             link.links(graph.links);
         }
 
-        function ticked() {
-            link
-                .attr("x1", function(d: any) {
-                    console.log("x1 - " + d.source.x);
-                    return d.source.x;
-                })
-                .attr("y1", function(d: any) {
-                    console.log("y1 - " + d.source.y);
-                    return d.source.y;
-                })
-                .attr("x2", function(d: any) {
-                    console.log("x2 - " + d.target.x);
-                    return d.target.x;
-                })
-                .attr("y2", function(d: any) {
-                    console.log("y2 - " + d.source.y);
-                    return d.source.y;
-                });
-
-            node
-                .attr("cx", function(d: any) {
-                    console.log("cx - " + d.x);
-                    return d.x;
-                })
-                .attr("cy", function(d: any) {
-                    console.log("cy - " + d.y)
-                    return d.y;
-                });
-
-            console.log("ciaone - tic ");
-        }
-
-
         function dragstarted(d: any) {
+            console.log("Drag!");
             if (!d3.event.active) { simulation.alphaTarget(0.3).restart(); }
             d.fx = d.x;
             d.fy = d.y;
@@ -997,21 +1007,178 @@ export class PZotGraphEngine {
             d.fx = null;
             d.fy = null;
         }
+
+       
+    }
+
+    private Darcula() {
+        let Dracula = require('graphdracula')
+
+        let Graph = Dracula.Graph
+        let Renderer = Dracula.Renderer.Raphael
+        let Layout = Dracula.Layout.Spring
+
+        let graph = new Graph()
+
+        graph.addEdge('Banana', 'Apple')
+        graph.addEdge('Apple', 'Kiwi')
+        graph.addEdge('Apple', 'Dragonfruit')
+        graph.addEdge('Dragonfruit', 'Banana')
+        graph.addEdge('Kiwi', 'Banana')
+
+        let layout = new Layout(graph)
+        let renderer = new Renderer(this.canvas, graph, 400, 300)
+        renderer.draw()
+    }
+
+    
+    private Cytoscape(container: HTMLElement) {  
+        console.log(" 4. Cytoscaping");
+
+        let cy = cytoscape({
+            container: container,
+    
+            style: [
+            {
+                selector: 'node',
+                style: {
+                'content': 'data(id)',
+                'text-opacity': 0.5,
+                'text-valign': 'center',
+                'text-halign': 'right',
+                'background-color': '#11479e'
+                }
+            },
+        
+            {
+                selector: 'edge',
+                style: {
+                'curve-style': 'bezier',
+                'width': 4,
+                'target-arrow-shape': 'triangle',
+                'line-color': '#9dbaea',
+                'target-arrow-color': '#9dbaea'
+                }
+            }
+            ],
+        
+            elements: {
+            nodes: [
+                { data: { id: 'n0' } },
+                { data: { id: 'n1' } },
+                { data: { id: 'n2' } },
+                { data: { id: 'n3' } },
+                { data: { id: 'n4' } },
+                { data: { id: 'n5' } },
+                { data: { id: 'n6' } },
+                { data: { id: 'n7' } },
+                { data: { id: 'n8' } },
+                { data: { id: 'n9' } },
+                { data: { id: 'n10' } },
+                { data: { id: 'n11' } },
+                { data: { id: 'n12' } },
+                { data: { id: 'n13' } },
+                { data: { id: 'n14' } },
+                { data: { id: 'n15' } },
+                { data: { id: 'n16' } }
+            ],
+            edges: [
+                { data: { source: 'n0', target: 'n1' } },
+                { data: { source: 'n1', target: 'n2' } },
+                { data: { source: 'n1', target: 'n3' } },
+                { data: { source: 'n4', target: 'n5' } },
+                { data: { source: 'n4', target: 'n6' } },
+                { data: { source: 'n6', target: 'n7' } },
+                { data: { source: 'n6', target: 'n8' } },
+                { data: { source: 'n8', target: 'n9' } },
+                { data: { source: 'n8', target: 'n10' } },
+                { data: { source: 'n11', target: 'n12' } },
+                { data: { source: 'n12', target: 'n13' } },
+                { data: { source: 'n13', target: 'n14' } },
+                { data: { source: 'n13', target: 'n15' } },
+            ]
+            },
+            });
+    }
+
+    private ParseDependencies(text: string) {
+        let input = text;
+        let counter = 10
+        while (input != "" && counter > 0) {
+            console.log(" New Cycle + " + input);
+
+            let operator = input.match(this.operatorRegex);
+            console.log(" Operator + " + operator);
+
+            if (operator != null) {
+                input = input.substring(operator.length, input.length);
+                console.log(operator + " - " + input);
+            }
+
+            counter -- ;
+        }
     }
 
     public render(text: string): string {
+        // try {
+        //     if (text != null) {
+        //         console.log(text);
 
-        this.canvas = document.createElement("timeline");
+        //         let dep = text.match(this.dependenciesRegex);
+        //         console.log(dep);
+        //         if (dep != null) {
+        //             this.ParseDependencies(dep[0]);
+        //         }
+        //     }
+        // } catch (error) {
+        //     console.log(error);
+        // }
+        console.log(" 0. Init");
 
-        this.graph = d3.select(this.canvas);
 
-        // this.generateCicrle();
+        // if (!this.rendered) {
+        //     console.log(" 1. Render Started");
 
-        // this.generateTimeline(this.canvas);
+        //     this.canvas = document.createElement("timeline");
+        //     this.canvas.id = "timeline";
+            
+        //     document.onclick = () => { 
+            
+        //         if (!this.loaded) {
+        //             console.log(" 3. DOM Attached");
 
-        this.generateGraph(this.graph);
+        //             let element = document.getElementById('timeline');
+                    
+        //             console.log(element);
 
-        console.log(this.canvas.outerHTML);
-        return this.canvas.outerHTML;
+        //             if (element) {
+        //                 element.style.width = "100%";
+        //                 element.style.height = "100%";
+        //                 element.style.position = "inherit";
+
+        //                 this.Cytoscape(element);
+        //             } 
+
+        //             this.loaded = true;
+        //         }
+        //     }
+
+        //     //this.Cytoscape();
+        //     //this.graph = d3.select(this.canvas);
+
+        //     // this.generateCicrle();
+
+        //     // this.generateTimeline(this.canvas);
+
+        //     //this.generateGraph(this.graph);
+
+        //     console.log(this.canvas.outerHTML);
+        //     console.log(" 2. Created DOM");
+
+        //     this.widget = this.canvas.outerHTML;
+        //     this.rendered = true;
+        // }
+
+        return this.widget;
     }
 }
