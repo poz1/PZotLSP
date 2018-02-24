@@ -1,3 +1,2 @@
-DEPENDENCIES: (withinf (&& (dep (next (-p- a)) (-p- b) (-p- c)) 
-(dep (next (-p- a)) (-p- c))) 5) 
+DEPENDENCIES: (dep (next (-p- g)) (-p- r) (-p- e)) 
 FORMULA: (&& (-p- e) (-p- f))

@@ -52,8 +52,8 @@ export class PZotDependencyGraphOpenHandler implements OpenHandler {
     }
 
     protected async createWidget(uri: URI): Promise<PZotDependencyGraphWidget> {
-        const markdownUri = this.pzotURI.to(uri);
-        const resource = await this.resourceProvider(markdownUri)
+        const pzotUri = this.pzotURI.to(uri);
+        const resource = await this.resourceProvider(pzotUri)
         const widget = new PZotDependencyGraphWidget(resource);
         widget.id = `pzot-dependecy-graph-` + this.widgetSequence++;
         widget.title.label = `Dependency Graph of '${uri.path.base}'`;
