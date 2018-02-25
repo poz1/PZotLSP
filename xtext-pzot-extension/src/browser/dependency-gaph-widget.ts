@@ -14,13 +14,19 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         this.node.tabIndex = 0;
         this.toDispose.push(resource);
         if (resource.onDidChangeContents) {
-            this.toDispose.push(resource.onDidChangeContents(() => this.update()));
+            this.toDispose.push(resource.onDidChangeContents(() => {
+                console.log("changedREs!");
+                this.resource.clearGraph();
+                this.resource.parseDocument();
+                this.update();
+            }));
         }
         this.activate();
     }
 
     onActivateRequest(msg: Message): void {
         super.onActivateRequest(msg);
+        this.resource.parseDocument();
         this.resource.readContents().then(html =>
             this.node.innerHTML = html
         );

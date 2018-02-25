@@ -6,13 +6,67 @@ import { Workspace } from '@theia/languages/lib/common';
 import { PZotUri } from "./pzot-uri";
 import { PZotGraphEngine, Edge, Node } from "./pzot-graph-engine";
 
+export class PZotGraphItem {
+    label: string = "";
+    period: number = 0;
+
+    periodUpperBound = 0;
+    periodLowerBound = 0;
+
+    private children = new Array<PZotGraphItem>();
+
+    constructor(text: string) {
+        this.parsePZotItem(text);
+    }
+
+    private parsePZotItem(element: string) {
+        let n = (element.match(/next/g) || []).length;
+        let p = (element.match(/yesterday/g) || []).length;
+
+        element = element.replace(/\(|\)|-p-|next|yesterday/g, '');
+
+        this.label = element;
+        this.period = n - p;
+
+        this.periodUpperBound = this.period;
+        this.periodLowerBound = this.period;
+
+    }
+
+    /**
+     * addChildren
+     */
+    public addChildren(node: PZotGraphItem) {
+        this.children.push(node)
+
+        if (node.period > this.periodUpperBound) {
+            this.periodUpperBound = node.period;
+        }
+
+        if (node.period < this.periodLowerBound) {
+            this.periodLowerBound = node.period;
+        }
+    }
+
+    /**
+     * getChildren
+     */
+    public getChildren(): Array<PZotGraphItem> {
+        return this.children;
+    }
+}
+
 export class PZotGraphResource implements Resource {
 
     protected readonly originalUri: string;
     protected readonly toDispose = new DisposableCollection();
     protected readonly onDidChangeContentsEmitter = new Emitter<void>();
 
-    private operatorRegex = /(?=\()\W\w+|(?=\()\W\W\W/;
+    private operatorRegex = /(?=\()\W\w+|(?=\()\W\W\W/g;
+    private items = new Array<PZotGraphItem>();
+    
+    private periodUpperBound = 0;
+    private periodLowerBound = 0;
 
     constructor(
         public readonly uri: URI,
@@ -48,17 +102,11 @@ export class PZotGraphResource implements Resource {
     }
 
     async readContents(options?: { encoding?: string | undefined; }): Promise<string> {
-        const document = this.workspace.textDocuments.find(document => document.uri === this.originalUri);
-        if (document) {
-            console.log("DOC: " + document.getText());
-            this.ParseDependencies(document.getText());
-            return this.render(document.getText());
-        }
-        return this.render(await this.originalResource.readContents(options));
+        return this.render();
     }
 
-    protected render(text: string): string {
-        return this.engine.render(text);
+    protected render(): string {
+        return this.engine.render();
     }
 
     reloadGraph(): any {
@@ -68,16 +116,24 @@ export class PZotGraphResource implements Resource {
     /**
     * ParseDependencies
     */
-    public ParseDependencies(text: string) {
+    public parseDocument() {
         try {
-            if (text != null) {
-                console.log(text);
-                let startTrim = text.indexOf("DEPENDENCIES:") + 13;
-                let endTrim = text.indexOf("FORMULA:") - 13;
-                let dep = text.substr(startTrim, endTrim)
+            const document = this.workspace.textDocuments.find(document => document.uri === this.originalUri);
+            if (document) {
+                let text = document.getText();
+                console.log("DOC: " + document.getText());
 
-                if (dep != null) {
-                    this.ParseDepende(dep);
+                if (text != null) {
+                    console.log(text);
+                    let startTrim = text.indexOf("DEPENDENCIES:") + 13;
+                    let endTrim = text.indexOf("FORMULA:") - 13;
+                    let dep = text.substr(startTrim, endTrim)
+
+                    if (dep != null) {
+                        this.parseDependencies(dep);
+                        this.calculateTimeBounds();
+                        this.loadGraph();
+                    }
                 }
             }
         } catch (error) {
@@ -85,44 +141,69 @@ export class PZotGraphResource implements Resource {
         }
     }
 
-    private ParseDepende(text: string) {
+    private parseDependencies(text: string) {
         let input = text.replace(/\s|[\r\n]+/gm, "");
-        let counter = 10
-        while (input != "" && counter > 0) {
-            let operator = input.match(this.operatorRegex);
+        let operators = input.match(this.operatorRegex);
 
-            if (operator != null) {
-                console.log(" Operator :{ " + operator[0] + " } OP Lenght: " + operator[0].length);
-                
-                input = input.substring(operator[0].length, input.length);
+        if (operators != null ) {
+            operators.forEach(operator => {
+                console.log(" Operator :{ " + operator + " } OP Lenght: " + operator.length);
+                    
+                input = input.substring(operator.length);
 
-                if (operator[0].match(/\(dep/)) {
-                    console.log("dep!");
-                    this.ParseDEPItems(input);
+                if (operator.match(/\(dep/)) {
+                    let deps = input.split("dep");
+                    deps.forEach(element => {
+                        console.log("dep! : " + element);
+                        this.parseDependency(element);
+
+                        input = input.substring(element.length);
+                        console.log(" - REMAINS - : { " + input + " }");   
+                    });
+     
                 }
 
-                console.log(operator[0] + " - INPUT: { " + input + " }");
-            }
-
-            counter -- ;
-        }
+                console.log(operator[0] + " - INPUT: { " + input + " }");        
+            });
+        }    
     }
 
-    private ParseDEPItems(text: string) {
-        let items = text.split(")(");
+    private parseDependency(text: string) {
+        let nodes = text.split(")(");
+        let mainNode = new PZotGraphItem('');
 
-        items.forEach(element => {
-            let index = items.indexOf(element);
-            console.log("index: - " + index);
-            element = element.replace(/\(|\)/g, '');
-            this.engine.AddNode(new Node(element));
-            
-            if (index != 0) {
-                let edge = new Edge(this.engine.GetNode(0), this.engine.GetNode(index));
-                this.engine.AddEdge(edge)
-                console.log("new edge!: - " + edge);
+        nodes.forEach(element => {
+            let index = nodes.indexOf(element);
+
+            if (index == 0) {
+                mainNode = new PZotGraphItem(element);
+            } else {
+                mainNode.addChildren(new PZotGraphItem(element))
             }
         });
+
+        this.items.push(mainNode);
+    }
+
+    private loadGraph() {
+        this.engine.setData(this.items);
+        
+    }
+    
+    private calculateTimeBounds() {
+        this.items.forEach(node => {
+            if (node.periodUpperBound > this.periodUpperBound) {
+                this.periodUpperBound = node.periodUpperBound;
+            }
+    
+            if (node.periodLowerBound < this.periodLowerBound) {
+                this.periodLowerBound = node.periodLowerBound;
+            }
+        });
+    }
+
+    public clearGraph() {
+        this.engine.clear();
     }
 }
 
