@@ -5,7 +5,8 @@ import '../../src/browser/style/index.css';
 import '../../src/browser/style/vis.min.css';
 import cytoscape = require('cytoscape');
 
-class Node {
+
+export class Node {
     label: string = "";
 
     constructor(input: string) {
@@ -13,7 +14,7 @@ class Node {
     }
 }
 
-class Edge {
+export class Edge {
     source: Node;
     target: Node;
 
@@ -25,54 +26,9 @@ class Edge {
 
  export class PZotGraphEngine {
 
-    protected canvas: HTMLElement;
-//       protected graph: any ;
-//     protected simulation: any ;
-
-//     protected  width: number;
-//     protected  height: number ;
-//     protected  color: any;
-
-//     private link: any;
-//     private node: any;
-//     private packLayout: any;
-    private loaded: boolean = false;
-    private rendered: boolean = false;
-    private widget: string = "";
-    private operatorRegex = /(?=\()\W\w+|(?=\()\W\W\W/;
-
     private nodes = new Array<Node>();
     private edges = new Array<Edge>();
 
-//     // Dependency Tree Structure
-//     private data = {
-//         "name": "A1",
-//         "children": [
-//           {
-//             "name": "B1",
-//             "children": [
-//               {
-//                 "name": "C1",
-//                 "value": 100
-//               },
-//               {
-//                 "name": "C2",
-//                 "value": 300
-//               },
-//               {
-//                 "name": "C3",
-//                 "value": 200
-//               }
-//             ]
-//           },
-//           {
-//             "name": "B2",
-//             "value": 200
-//           }
-//         ]
-//       }
-
-//     private root = d3.hierarchy(this.data);
 
 //     constructor() {
 //         //this.color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -1014,8 +970,7 @@ class Edge {
 
     
     private Cytoscape(container: HTMLElement) {  
-        console.log(" 4. Cytoscaping");
-
+    
         let cy = cytoscape({
             container: container,
     
@@ -1045,121 +1000,50 @@ class Edge {
 
         try {
     
-        this.nodes.forEach(element => {
-                cy.add({ data: { id: element.label } });
+            this.nodes.forEach(element => {
+                    cy.add({ data: { id: element.label } });
             });
 
             this.edges.forEach(element => {
-                console.log(element);
-
                 cy.add( { data: { source: element.source.label, target: element.target.label} });
             });
-
-            cy.center();
         
             } catch (error) {
                 console.log(error);
             }   
         }
 
-    private ParseDependencies(text: string) {
-        let input = text.replace(/\s|[\r\n]+/gm, "");
-        let counter = 10
-        while (input != "" && counter > 0) {
-            let operator = input.match(this.operatorRegex);
 
-            if (operator != null) {
-                console.log(" Operator :{ " + operator[0] + " } OP Lenght: " + operator[0].length);
-                
-                input = input.substring(operator[0].length, input.length);
 
-                if (operator[0].match(/\(dep/)) {
-                    console.log("dep!");
-                    this.ParseDEPItems(input);
-                }
-
-                console.log(operator[0] + " - INPUT: { " + input + " }");
-            }
-
-            counter -- ;
-        }
-    }
-
-    private ParseDEPItems(text: string) {
-        let items = text.split(")(");
-
-        items.forEach(element => {
-            element = element.replace(/\(|\)/g, '');
-            this.nodes.push(new Node(element));
-
-            console.log("index! : " + items.indexOf(element));
-            
-            if (items.indexOf(element) != 0) {
-                this.edges.push(new Edge(this.nodes[0], this.nodes[items.indexOf(element)]))
-            }
-        });
-    }
-
+    
     public render(text: string): string {
-        try {
-            if (text != null) {
-                console.log(text);
-                let startTrim = text.indexOf("DEPENDENCIES:") + 13;
-                let endTrim = text.indexOf("FORMULA:") - 13;
-                let dep = text.substr(startTrim, endTrim)
+        let canvas = document.createElement("timeline");
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        canvas.style.position = "inherit";
+        canvas.id = "timeline";
+        return canvas.outerHTML;
+    }
 
-                if (dep != null) {
-                    this.ParseDependencies(dep);
-                }
-            }
-        } catch (error) {
-            console.log(error);
-        }
-        console.log(" 0. Init");
 
-        if (!this.rendered) {
-            console.log(" 1. Render Started");
 
-            this.canvas = document.createElement("timeline");
-            this.canvas.id = "timeline";
+    public reloadGraph() {
+        let element = document.getElementById('timeline');
+        if (element != null) {
             
-            document.onclick = () => { 
-            
-                if (!this.loaded) {
-                    console.log(" 3. DOM Attached");
-
-                    let element = document.getElementById('timeline');
-                    
-                    console.log(element);
-
-                    if (element) {
-                        element.style.width = "100%";
-                        element.style.height = "100%";
-                        element.style.position = "inherit";
-
-                        this.Cytoscape(element);
-                    } 
-
-                    this.loaded = true;
-                }
-            }
-
-            //this.Cytoscape();
-            //this.graph = d3.select(this.canvas);
-
-            // this.generateCicrle();
-
-            // this.generateTimeline(this.canvas);
-
-            //this.generateGraph(this.graph);
-
-            console.log(this.canvas.outerHTML);
-            console.log(" 2. Created DOM");
-
-            this.widget = this.canvas.outerHTML;
-            this.rendered = true;
+            this.Cytoscape(element);
         }
+    }
 
-        return this.widget;
+    public AddEdge(edge: Edge): void {
+        this.edges.push(edge);
+    }
+
+    public AddNode(node: Node): void {
+        this.nodes.push(node);
+    }
+
+    public GetNode(index: number): Node {
+        return this.nodes[index];
     }
 }

@@ -1,9 +1,10 @@
 import { injectable, inject } from 'inversify';
 import URI from '@theia/core/lib/common/uri';
-import { ResourceProvider } from '@theia/core/lib/common';
+import { ResourceProvider, ResourceResolver } from '@theia/core/lib/common';
 import { OpenHandler, FrontendApplication } from '@theia/core/lib/browser';
 import { PZotUri } from './pzot-uri';
 import { PZotDependencyGraphWidget } from './dependency-gaph-widget';
+import { PZotGraphResourceResolver, PZotGraphResource } from './pzot-graph-resource';
 
 @injectable()
 export class PZotDependencyGraphOpenHandler implements OpenHandler {
@@ -34,7 +35,8 @@ export class PZotDependencyGraphOpenHandler implements OpenHandler {
 
     async open(uri: URI): Promise<PZotDependencyGraphWidget | undefined> {
         const widget = await this.getWidget(uri);
-        this.app.shell.addWidget(widget, {area: 'main'});
+        this.app.shell.addWidget(widget, {area: 'bottom'});
+        this.app.shell.activateWidget(widget.id);
         return widget;
     }
 
@@ -53,13 +55,14 @@ export class PZotDependencyGraphOpenHandler implements OpenHandler {
 
     protected async createWidget(uri: URI): Promise<PZotDependencyGraphWidget> {
         const pzotUri = this.pzotURI.to(uri);
-        const resource = await this.resourceProvider(pzotUri)
-        const widget = new PZotDependencyGraphWidget(resource);
+        const resource = await this.resourceProvider(pzotUri);
+        const widget = new PZotDependencyGraphWidget(resource as PZotGraphResource);
         widget.id = `pzot-dependecy-graph-` + this.widgetSequence++;
         widget.title.label = `Dependency Graph of '${uri.path.base}'`;
         widget.title.caption = widget.title.label;
         widget.title.closable = true;
-        this.app.shell.addWidget(widget, {area: 'main'});
+        this.app.shell.addWidget(widget, {area: 'bottom'});
+        this.app.shell.activateWidget(widget.id);
         return widget;
     }
 }

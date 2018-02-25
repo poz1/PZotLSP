@@ -12,10 +12,10 @@ export default new ContainerModule(bind => {
 
     bind(PZotUri).toSelf().inSingletonScope();
 
-    bind(PZotDependencyGraphOpenHandler).toSelf().inSingletonScope();
-    bind(OpenHandler).toDynamicValue(ctx => ctx.container.get(PZotDependencyGraphOpenHandler)).inSingletonScope();
-
     bind(PZotGraphResourceResolver).toSelf().inSingletonScope();
     bind(ResourceResolver).toDynamicValue(ctx => ctx.container.get(PZotGraphResourceResolver)).inSingletonScope();
+
+    bind(PZotDependencyGraphOpenHandler).toSelf().inSingletonScope();
+    bind(OpenHandler).toDynamicValue(ctx => ctx.container.get(PZotDependencyGraphOpenHandler)).inSingletonScope();
 });
 
