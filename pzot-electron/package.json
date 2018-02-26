@@ -16,6 +16,7 @@
     "@theia/typescript": "latest",
     "@theia/workspace": "latest",
     "@theia/xtext-pzot-extension": "0.1.0",
+    "@types/cytoscape": "^3.1.6",
     "@types/vis": "^4.21.1",
     "electron": "^1.6.11",
     "vis": "^4.21.0"

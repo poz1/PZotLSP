@@ -7,11 +7,11 @@ const CircularDependencyPlugin = require('circular-dependency-plugin');
 const outputPath = path.resolve(__dirname, 'lib');
 const development = process.env.NODE_ENV === 'development';
 
-const monacoEditorPath = development ? '/Users/poz1/PZotLSP/node_modules/monaco-editor-core/dev/vs' : '/Users/poz1/PZotLSP/node_modules/monaco-editor-core/min/vs';
-const monacoLanguagesPath = '/Users/poz1/PZotLSP/node_modules/monaco-languages/release';
-const monacoCssLanguagePath = '/Users/poz1/PZotLSP/node_modules/monaco-css/release/min';
-const monacoJsonLanguagePath = '/Users/poz1/PZotLSP/node_modules/monaco-json/release/min';
-const monacoHtmlLanguagePath = '/Users/poz1/PZotLSP/node_modules/monaco-html/release/min';
+const monacoEditorPath = development ? '/Users/poz1/Desktop/PZotLSP/node_modules/monaco-editor-core/dev/vs' : '/Users/poz1/Desktop/PZotLSP/node_modules/monaco-editor-core/min/vs';
+const monacoLanguagesPath = '/Users/poz1/Desktop/PZotLSP/node_modules/monaco-languages/release';
+const monacoCssLanguagePath = '/Users/poz1/Desktop/PZotLSP/node_modules/monaco-css/release/min';
+const monacoJsonLanguagePath = '/Users/poz1/Desktop/PZotLSP/node_modules/monaco-json/release/min';
+const monacoHtmlLanguagePath = '/Users/poz1/Desktop/PZotLSP/node_modules/monaco-html/release/min';
 
 module.exports = {
     entry: path.resolve(__dirname, 'src-gen/frontend/index.js'),

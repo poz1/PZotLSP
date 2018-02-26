@@ -19,6 +19,8 @@ export class PZotGraphItem {
         this.parsePZotItem(text);
     }
 
+    get isParent() {return this.children.length != 0}
+
     private parsePZotItem(element: string) {
         let n = (element.match(/next/g) || []).length;
         let p = (element.match(/yesterday/g) || []).length;
@@ -30,7 +32,6 @@ export class PZotGraphItem {
 
         this.periodUpperBound = this.period;
         this.periodLowerBound = this.period;
-
     }
 
     /**
@@ -124,13 +125,17 @@ export class PZotGraphResource implements Resource {
 
     protected render(): string {
         if (this.originalResource.saveContents) {
-            //this.originalResource.saveContents("lol");
+            // this.originalResource.saveContents("lol");
         }
-        return this.engine.render();
+        return this.engine.init();
     }
 
-    public reloadGraph(): any {
-        this.engine.reloadGraph();
+    public recomputeGraph(): any {
+        this.engine.recomputeGraph();
+    }
+
+    public redrawGraph(): any {
+        this.engine.redrawGraph();
     }
 
     /**
@@ -160,7 +165,7 @@ export class PZotGraphResource implements Resource {
                         this.parseDependencies(dep);
                         this.calculateTimeBounds();
                         // this.logNodes();
-                        this.loadGraph();
+                        this.createGraph();
                     }
                 }
             }
@@ -195,24 +200,28 @@ export class PZotGraphResource implements Resource {
         let nodes = text.split(")(");
         
         if (nodes != null) {
-            let mainNode = new PZotGraphItem('');
+            let mainNode = new PZotGraphItem('%null%');
 
             nodes.forEach(element => {
-                let index = nodes.indexOf(element);
+                if (element != "") {
+                    let index = nodes.indexOf(element);
 
-                if (index == 0) {
-                    mainNode = new PZotGraphItem(element);
-                } else {
-                    mainNode.addChildren(new PZotGraphItem(element))
+                    if (index == 0) {
+                        mainNode = new PZotGraphItem(element);
+                    } else {
+                        mainNode.addChildren(new PZotGraphItem(element))
+                    }
                 }
             });
 
-            this.items.push(mainNode);
+            if (mainNode.label != '%null%') {
+                this.items.push(mainNode);
+            }
         }
     }
 
-    private loadGraph() {
-        this.engine.setData(this.items);
+    private createGraph() {
+        this.engine.addData(this.items);
     }
     
     private calculateTimeBounds() {
@@ -229,6 +238,7 @@ export class PZotGraphResource implements Resource {
 
     public clearGraph() {
         this.engine.clear();
+        this.items = new Array<PZotGraphItem>();
     }
 }
 

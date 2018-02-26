@@ -1,6 +1,7 @@
 import { Resource } from '@theia/core';
 import { BaseWidget, Message } from '@theia/core/lib/browser';
 import { PZotGraphResource } from './pzot-graph-resource';
+import { Widget } from '@phosphor/widgets';
 
 export const PZOTGRAPH_WIDGET_CLASS = 'theia-pzot-dependecy-graph-widget';
 
@@ -15,6 +16,7 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         this.toDispose.push(resource);
         if (resource.onDidChangeContents) {
             this.toDispose.push(resource.onDidChangeContents(() => {
+                console.log("text changed");
                 this.resource.clearGraph();
                 this.resource.parseDocument();
                 this.update();
@@ -35,6 +37,13 @@ export class PZotDependencyGraphWidget extends BaseWidget {
 
     onUpdateRequest(msg: Message): void {
         super.onUpdateRequest(msg);
-        this.resource.reloadGraph();
+        this.resource.recomputeGraph();
+    }
+
+    
+    onResize(msg: Widget.ResizeMessage) {
+        console.log("resize!");
+        super.onResize(msg);
+        this.resource.redrawGraph();
     }
 }
