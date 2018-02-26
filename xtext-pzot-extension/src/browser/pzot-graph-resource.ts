@@ -54,6 +54,18 @@ export class PZotGraphItem {
     public getChildren(): Array<PZotGraphItem> {
         return this.children;
     }
+
+    /**
+     * toString
+     */
+    public toString() {
+        console.log("Node: " + this.label);
+        console.log("UpperBound: " + this.periodUpperBound + "LowerBound: " + this.periodLowerBound);
+
+        this.children.forEach(element => {
+            element.toString();
+        });
+    }
 }
 
 export class PZotGraphResource implements Resource {
@@ -62,7 +74,6 @@ export class PZotGraphResource implements Resource {
     protected readonly toDispose = new DisposableCollection();
     protected readonly onDidChangeContentsEmitter = new Emitter<void>();
 
-    private operatorRegex = /(?=\()\W\w+|(?=\()\W\W\W/g;
     private items = new Array<PZotGraphItem>();
     
     private periodUpperBound = 0;
@@ -83,6 +94,7 @@ export class PZotGraphResource implements Resource {
         this.toDispose.push(this.workspace.onDidOpenTextDocument(({ uri }) => this.fireDidChangeContents(uri)));
         this.toDispose.push(this.workspace.onDidChangeTextDocument(({ textDocument }) => this.fireDidChangeContents(textDocument.uri)));
         this.toDispose.push(this.workspace.onDidCloseTextDocument(({ uri }) => this.fireDidChangeContents(uri)));
+
     }
 
     dispose(): void {
@@ -92,6 +104,7 @@ export class PZotGraphResource implements Resource {
     get onDidChangeContents(): Event<void> {
         return this.onDidChangeContentsEmitter.event;
     }
+
     protected fireDidChangeContents(affectedUri?: string): void {
         if (this.shouldFireDidChangeContents(affectedUri)) {
             this.onDidChangeContentsEmitter.fire(undefined);
@@ -105,12 +118,28 @@ export class PZotGraphResource implements Resource {
         return this.render();
     }
 
+    async saveContents(content: string, options?: { encoding?: string; }): Promise<void> {
+        console.log("SAVE? " + content);
+    }
+
     protected render(): string {
+        if (this.originalResource.saveContents) {
+            //this.originalResource.saveContents("lol");
+        }
         return this.engine.render();
     }
 
-    reloadGraph(): any {
+    public reloadGraph(): any {
         this.engine.reloadGraph();
+    }
+
+    /**
+     * logNodes
+     */
+    public logNodes() {
+        this.items.forEach(element => {
+            element.toString();
+        });    
     }
 
     /**
@@ -121,10 +150,8 @@ export class PZotGraphResource implements Resource {
             const document = this.workspace.textDocuments.find(document => document.uri === this.originalUri);
             if (document) {
                 let text = document.getText();
-                console.log("DOC: " + document.getText());
-
+                
                 if (text != null) {
-                    console.log(text);
                     let startTrim = text.indexOf("DEPENDENCIES:") + 13;
                     let endTrim = text.indexOf("FORMULA:") - 13;
                     let dep = text.substr(startTrim, endTrim)
@@ -132,6 +159,7 @@ export class PZotGraphResource implements Resource {
                     if (dep != null) {
                         this.parseDependencies(dep);
                         this.calculateTimeBounds();
+                        // this.logNodes();
                         this.loadGraph();
                     }
                 }
@@ -143,51 +171,48 @@ export class PZotGraphResource implements Resource {
 
     private parseDependencies(text: string) {
         let input = text.replace(/\s|[\r\n]+/gm, "");
-        let operators = input.match(this.operatorRegex);
+        let operators = input.match(/(?=\()\W\w+|(?=\()\W\W\W/g);
 
         if (operators != null ) {
             operators.forEach(operator => {
-                console.log(" Operator :{ " + operator + " } OP Lenght: " + operator.length);
-                    
-                input = input.substring(operator.length);
-
-                if (operator.match(/\(dep/)) {
-                    let deps = input.split("dep");
-                    deps.forEach(element => {
-                        console.log("dep! : " + element);
-                        this.parseDependency(element);
-
-                        input = input.substring(element.length);
-                        console.log(" - REMAINS - : { " + input + " }");   
-                    });
-     
+                if (input != "") {
+                    if (operator.match(/\(dep/)) {
+                        let deps = input.split("(dep");
+                        deps.forEach(element => {
+                            this.parseDependency(element);
+                            input = input.substring(element.length + operator.length);
+                        });
+        
+                    } else {
+                        input = input.substring(operator.length);
+                    }
                 }
-
-                console.log(operator[0] + " - INPUT: { " + input + " }");        
             });
         }    
     }
 
     private parseDependency(text: string) {
         let nodes = text.split(")(");
-        let mainNode = new PZotGraphItem('');
+        
+        if (nodes != null) {
+            let mainNode = new PZotGraphItem('');
 
-        nodes.forEach(element => {
-            let index = nodes.indexOf(element);
+            nodes.forEach(element => {
+                let index = nodes.indexOf(element);
 
-            if (index == 0) {
-                mainNode = new PZotGraphItem(element);
-            } else {
-                mainNode.addChildren(new PZotGraphItem(element))
-            }
-        });
+                if (index == 0) {
+                    mainNode = new PZotGraphItem(element);
+                } else {
+                    mainNode.addChildren(new PZotGraphItem(element))
+                }
+            });
 
-        this.items.push(mainNode);
+            this.items.push(mainNode);
+        }
     }
 
     private loadGraph() {
         this.engine.setData(this.items);
-        
     }
     
     private calculateTimeBounds() {

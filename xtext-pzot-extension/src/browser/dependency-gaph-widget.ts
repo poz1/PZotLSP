@@ -15,7 +15,6 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         this.toDispose.push(resource);
         if (resource.onDidChangeContents) {
             this.toDispose.push(resource.onDidChangeContents(() => {
-                console.log("changedREs!");
                 this.resource.clearGraph();
                 this.resource.parseDocument();
                 this.update();
@@ -36,7 +35,6 @@ export class PZotDependencyGraphWidget extends BaseWidget {
 
     onUpdateRequest(msg: Message): void {
         super.onUpdateRequest(msg);
-        console.log("RELOAD!");
         this.resource.reloadGraph();
     }
 }
