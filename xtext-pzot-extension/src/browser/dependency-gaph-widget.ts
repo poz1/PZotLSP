@@ -16,10 +16,13 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         this.toDispose.push(resource);
         if (resource.onDidChangeContents) {
             this.toDispose.push(resource.onDidChangeContents(() => {
-                console.log("text changed");
-                this.resource.clearGraph();
-                this.resource.parseDocument();
-                this.update();
+                // if (!resource.updatingDeps) {
+                    this.resource.clearGraph();
+                    this.resource.parseDocument();
+                    this.update();
+                // } else {
+                //     this.resource.updatingDeps = false;
+                // }
             }));
         }
         this.activate();
@@ -27,10 +30,11 @@ export class PZotDependencyGraphWidget extends BaseWidget {
 
     onActivateRequest(msg: Message): void {
         super.onActivateRequest(msg);
-        this.resource.parseDocument();
         this.resource.readContents().then(html =>
             this.node.innerHTML = html
         );
+        this.resource.clearGraph();
+        this.resource.parseDocument();
         this.node.focus();
         this.update();
     }
@@ -40,7 +44,6 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         this.resource.recomputeGraph();
     }
 
-    
     onResize(msg: Widget.ResizeMessage) {
         console.log("resize!");
         super.onResize(msg);

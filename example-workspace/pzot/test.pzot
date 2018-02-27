@@ -1,2 +1,2 @@
-DEPENDENCIES: (&& (dep (next (-p- one))(-p- h)(-p- rhu)(next (-p- g)))(dep (-p- f) (yesterday(-p- w)))) 
+DEPENDENCIES: (&& (dep (-p- f) (-p- a)(next (next (-p- b)))))
 FORMULA: (-p- r)

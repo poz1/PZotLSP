@@ -4,12 +4,13 @@ import URI from "@theia/core/lib/common/uri";
 import { FileSystem } from '@theia/filesystem/lib/common';
 import { Workspace } from '@theia/languages/lib/common';
 import { PZotUri } from "./pzot-uri";
-import { PZotGraphEngine, Edge, Node } from "./pzot-graph-engine";
+import { PZotGraphEngine, Edge, Node, PZotGraph } from "./pzot-graph-engine";
+import { ConsoleLogger } from "vscode-ws-jsonrpc/lib";
 
 export class PZotGraphItem {
     label: string = "";
     period: number = 0;
-
+    id: string = "";
     periodUpperBound = 0;
     periodLowerBound = 0;
 
@@ -22,16 +23,18 @@ export class PZotGraphItem {
     get isParent() {return this.children.length != 0}
 
     private parsePZotItem(element: string) {
-        let n = (element.match(/next/g) || []).length;
-        let p = (element.match(/yesterday/g) || []).length;
+        if ( element != "undefined") {
+            let n = (element.match(/next/g) || []).length;
+            let p = (element.match(/yesterday/g) || []).length;
 
-        element = element.replace(/\(|\)|-p-|next|yesterday/g, '');
+            element = element.replace(/\(|\)|-p-|next|yesterday/g, '');
 
-        this.label = element;
-        this.period = n - p;
+            this.label = element;
+            this.period = n - p;
 
-        this.periodUpperBound = this.period;
-        this.periodLowerBound = this.period;
+            this.periodUpperBound = this.period;
+            this.periodLowerBound = this.period;
+        }
     }
 
     /**
@@ -62,7 +65,7 @@ export class PZotGraphItem {
     public toString() {
         console.log("Node: " + this.label);
         console.log("UpperBound: " + this.periodUpperBound + "LowerBound: " + this.periodLowerBound);
-
+        console.log("Children: ");
         this.children.forEach(element => {
             element.toString();
         });
@@ -79,6 +82,8 @@ export class PZotGraphResource implements Resource {
     
     private periodUpperBound = 0;
     private periodLowerBound = 0;
+    public updatingDeps = false;
+    private formula = "";
 
     constructor(
         public readonly uri: URI,
@@ -95,7 +100,6 @@ export class PZotGraphResource implements Resource {
         this.toDispose.push(this.workspace.onDidOpenTextDocument(({ uri }) => this.fireDidChangeContents(uri)));
         this.toDispose.push(this.workspace.onDidChangeTextDocument(({ textDocument }) => this.fireDidChangeContents(textDocument.uri)));
         this.toDispose.push(this.workspace.onDidCloseTextDocument(({ uri }) => this.fireDidChangeContents(uri)));
-
     }
 
     dispose(): void {
@@ -124,10 +128,78 @@ export class PZotGraphResource implements Resource {
     }
 
     protected render(): string {
+        return this.engine.init(this);
+    }
+
+    public updateDependencies(text: string) {
         if (this.originalResource.saveContents) {
-            // this.originalResource.saveContents("lol");
+            this.originalResource.saveContents("DEPENDENCIES: " + text + "\n" + this.formula);
         }
-        return this.engine.init();
+    }
+
+    public graphToDependecies(graph: PZotGraph) {
+        let dependecies = "";
+        let mainNodes = new Array<PZotGraphItem>();
+
+        graph.edges.forEach(edge => {
+            let mainNode = mainNodes.find((x) => x.id === edge.source.id);
+            if ( mainNode == undefined) {
+                let node = this.nodeToPZotGraphItem(edge.source);
+                node.addChildren(this.nodeToPZotGraphItem(edge.target));
+                mainNodes.push(node);
+            } else {
+                mainNode.addChildren(this.nodeToPZotGraphItem(edge.target));
+            }
+        });
+
+        if (mainNodes.length > 0) {
+            if (mainNodes.length > 1) {
+                dependecies = "(&& ";
+                
+                mainNodes.forEach(node => {
+                    dependecies = dependecies + this.pzotGraphItemToDependendency(node);
+                });
+
+                dependecies = dependecies + ")";
+            } else {
+                dependecies = this.pzotGraphItemToDependendency(mainNodes[0]);
+            }
+
+            this.updatingDeps = true;
+            this.updateDependencies(dependecies);
+        }
+    }
+
+    public pzotGraphItemToDependendency(source: PZotGraphItem): string {
+        let dependecy = "(dep " + this.pzotGraphItemToLitteral(source);
+
+        source.getChildren().forEach(child => {
+            dependecy = dependecy + this.pzotGraphItemToLitteral(child);
+        });
+
+        return dependecy + ")";
+    }
+
+    public pzotGraphItemToLitteral(source: PZotGraphItem): string {
+        let litteral = "(-p- " + source.label + ")";
+        let yn = "";
+        
+        source.period < 0 ? yn = "yesterday" : yn = "next";
+        
+        for (let index = Math.abs(source.period); index > 0; index --) {
+            litteral = "(" + yn + " " + litteral + ")";
+        }
+
+        return litteral;
+    }
+
+    public nodeToPZotGraphItem(source: Node) : PZotGraphItem {
+        let node = new PZotGraphItem("undefined");
+        node.id = source.id;
+        node.label = source.label;
+        node.period = source.period;
+
+        return node;
     }
 
     public recomputeGraph(): any {
@@ -159,6 +231,8 @@ export class PZotGraphResource implements Resource {
                 if (text != null) {
                     let startTrim = text.indexOf("DEPENDENCIES:") + 13;
                     let endTrim = text.indexOf("FORMULA:") - 13;
+                    
+                    this.formula = text.substr(endTrim + 13);
                     let dep = text.substr(startTrim, endTrim)
 
                     if (dep != null) {

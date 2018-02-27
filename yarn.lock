@@ -2053,6 +2053,27 @@ cyclist@~0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/cyclist/-/cyclist-0.2.2.tgz#1b33792e11e914a2fd6d6ed6447464444e5fa640"
 
+cytoscape-context-menus@^3.0.5:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/cytoscape-context-menus/-/cytoscape-context-menus-3.0.5.tgz#210fbff14ac83f31a62b2ed2ab67d3b780b943dd"
+
+cytoscape-edgehandles@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/cytoscape-edgehandles/-/cytoscape-edgehandles-3.2.1.tgz#1fe2bdab7d804aa10a2e3045ed307ab5dbeb0673"
+
+cytoscape-popper@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/cytoscape-popper/-/cytoscape-popper-1.0.1.tgz#09fd147ab0b4d2749aec8d5d5214173c4ec3810d"
+  dependencies:
+    popper.js "^1.0.0"
+
+cytoscape-qtip@^2.7.1:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/cytoscape-qtip/-/cytoscape-qtip-2.7.1.tgz#8ed1f689c125d9d741a16e78a8355e4c224f14f2"
+  dependencies:
+    jquery "^2.0 || ^1.10.0"
+    qtip2 "^3.0 || ^2.2.0"
+
 cytoscape@^3.2.9:
   version "3.2.9"
   resolved "https://registry.yarnpkg.com/cytoscape/-/cytoscape-3.2.9.tgz#383fa975b04e0c05926ff27fa58550ddf0681494"
@@ -2638,6 +2659,10 @@ esutils@^2.0.2:
 etag@~1.8.1:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
+
+ev-emitter@^1.0.0:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/ev-emitter/-/ev-emitter-1.1.1.tgz#8f18b0ce5c76a5d18017f71c0a795c65b9138f2a"
 
 ev-store@^7.0.0:
   version "7.0.0"
@@ -3486,6 +3511,12 @@ image-size@~0.5.0:
   version "0.5.5"
   resolved "https://registry.yarnpkg.com/image-size/-/image-size-0.5.5.tgz#09dfd4ab9d20e29eb1c3e80b8990378df9e3cb9c"
 
+imagesloaded@>=3.0.0:
+  version "4.1.4"
+  resolved "https://registry.yarnpkg.com/imagesloaded/-/imagesloaded-4.1.4.tgz#1376efcd162bb768c34c3727ac89cc04051f3cc7"
+  dependencies:
+    ev-emitter "^1.0.0"
+
 imurmurhash@^0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/imurmurhash/-/imurmurhash-0.1.4.tgz#9218b9b2b928a238b13dc4fb6b6d576f231453ea"
@@ -3770,6 +3801,14 @@ isobject@^2.0.0:
 isstream@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
+
+jquery@>=1.6.0:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.3.1.tgz#958ce29e81c9790f31be7792df5d4d95fc57fbca"
+
+"jquery@^2.0 || ^1.10.0":
+  version "2.2.4"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-2.2.4.tgz#2c89d6889b5eac522a7eea32c14521559c6cbf02"
 
 js-base64@^2.1.9:
   version "2.4.3"
@@ -4431,6 +4470,10 @@ mount-point@^3.0.0:
     pify "^2.3.0"
     pinkie-promise "^2.0.1"
 
+mousetrap@^1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/mousetrap/-/mousetrap-1.6.1.tgz#2a085f5c751294c75e7e81f6ec2545b29cbf42d9"
+
 move-concurrently@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/move-concurrently/-/move-concurrently-1.0.1.tgz#be2c005fda32e0b29af1f05d7c4b33214c701f92"
@@ -4993,6 +5036,10 @@ plur@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/plur/-/plur-1.0.0.tgz#db85c6814f5e5e5a3b49efc28d604fec62975156"
 
+popper.js@^1.0.0:
+  version "1.12.9"
+  resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.12.9.tgz#0dfbc2dff96c451bb332edcfcfaaf566d331d5b3"
+
 postcss-calc@^5.2.0:
   version "5.3.1"
   resolved "https://registry.yarnpkg.com/postcss-calc/-/postcss-calc-5.3.1.tgz#77bae7ca928ad85716e2fda42f261bf7c1d65b5e"
@@ -5387,6 +5434,13 @@ qs@~5.1.0:
 qs@~6.4.0:
   version "6.4.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.4.0.tgz#13e26d28ad6b0ffaa91312cd3bf708ed351e7233"
+
+"qtip2@^3.0 || ^2.2.0":
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/qtip2/-/qtip2-3.0.3.tgz#7df088ae4412c24a4064de69e824cb3cf76210dc"
+  dependencies:
+    imagesloaded ">=3.0.0"
+    jquery ">=1.6.0"
 
 query-string@^4.1.0:
   version "4.3.4"
