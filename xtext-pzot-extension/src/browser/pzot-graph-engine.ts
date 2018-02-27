@@ -3,8 +3,37 @@ import cytoscape = require('cytoscape');
 import edgehandles from 'cytoscape-edgehandles';
 
 export class PZotGraph {
-    nodes = new Array<Node>();
+    private nodesList = new Array<Node>();
+
+    nodes = new Map<string, Map<string, Node>>();
     edges = new Array<Edge>();
+    isDirty = true;
+
+    public getNodesList(): Array<Node> {
+        let result = new Array<Node>();
+
+        if (this.isDirty) {
+            this.nodes.forEach(period => {
+                period.forEach(node => {
+                    result.push(node);
+                });
+            });
+    
+            this.nodesList = result;
+            this.isDirty = false;
+        } else {
+            result = this.nodesList;
+        }
+
+        return result;
+    }
+
+    public getNode(period: string, label: string): Node | undefined {
+        let nodesByPeriod = this.nodes.get(period);
+        if (nodesByPeriod) {
+            return nodesByPeriod.get(label);
+        }
+    }
 }
 
 export class Node {
@@ -134,13 +163,16 @@ export class Edge {
 
     public addData(data: Array<PZotGraphItem>) {
         data.forEach(element => {
-            let parent = new Node(element)
-            this.addNode(parent);
+            this.addNode(new Node(element));
 
             element.getChildren().forEach(child => {
-                let childNode = new Node(child);
-                this.addNode(childNode);
-                this.addEdge(new Edge(parent, childNode));
+                this.addNode(new Node(child));
+                let parent = this.graph.getNode(element.period.toString(), element.label);
+                let childNode = this.graph.getNode(child.period.toString(), child.label);
+
+                if (parent && childNode) {
+                    this.addEdge(new Edge(parent, childNode));
+                }
             });
         });   
     }
@@ -150,7 +182,7 @@ export class Edge {
     }
 
     public normalizePeriods(offset: number) {
-        this.graph.nodes.forEach(node => {
+        this.graph.getNodesList().forEach(node => {
             node.normalizePeriod( - offset);
         });
     }
@@ -199,9 +231,9 @@ export class Edge {
                 {
                     selector: 'edge',
                     style: {
-                    'curve-style': 'bezier',
+                    'curve-style': 'unbundled-bezier',
                     'width': 4,
-                    'target-arrow-shape': 'triangle'
+                    'target-arrow-shape': 'triangle-backcurve'
                     // 'line-color': '#9dbaea',
                     // 'target-arrow-color': '#9dbaea'
                     }
@@ -339,7 +371,7 @@ export class Edge {
             //this.cntxMenu = this.cy.contextMenus( menuOptions );
 
             try {
-                this.graph.nodes.forEach(node => {                        
+                this.graph.getNodesList().forEach(node => {                        
                     this.cy.add({ 
                             data: {id : node.id, label: node.label, period: node.period, isParent: node.isParent }, selectable: false
                     });
@@ -366,7 +398,7 @@ export class Edge {
      */
     public editNodeLabel(event: cytoscape.EventObject) {
         console.log("editLabel!");
-        let target = this.graph.nodes.find(x => x.id == event.target.id().toString());
+        let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
             let popper1 = event.target.popper({
                 content: () => {
                         let div = document.createElement('div');
@@ -390,14 +422,25 @@ export class Edge {
      */
     public deleteNode(event: cytoscape.EventObject) {
         console.log("deleteeee");
-        let target = this.graph.nodes.find(x => x.id == event.target.id().toString());
+        let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
         
         if (target != undefined) {
-            this.graph.nodes.splice(this.graph.nodes.indexOf(target));
+            this.graph.getNodesList().splice(this.graph.getNodesList().indexOf(target));
         }
 
         this.recomputeGraph();
     }
+
+    // public deleteEdge(event: cytoscape.EventObject) {
+    //     console.log("deleteeee");
+    //     let target = this.graph.edges.find(x => x.source.id == event.target.source().id().toString());
+        
+    //     if (target != undefined) {
+    //         this.graph.nodes.splice(this.graph.nodes.indexOf(target));
+    //     }
+
+    //     this.recomputeGraph();
+    // }
 
     /**
      * createNewNode
@@ -424,10 +467,10 @@ export class Edge {
         let periodSize = (this.width / this.periods); 
         let newPeriod = Math.round(node.position().x / periodSize);
 
-        this.graph.nodes[node.id()].period = newPeriod;
+        this.graph.getNodesList()[node.id()].period = newPeriod;
 
         if (!this.isNormalizedMode) { 
-            this.graph.nodes[node.id()].period += this.minPeriod;
+            this.graph.getNodesList()[node.id()].period += this.minPeriod;
         }
 
         //TODO: bottoncino
@@ -436,8 +479,8 @@ export class Edge {
 
     public onNewEdge(sourceNode: any, targetNode: any, addedEles: any ) {
 
-        let source = this.graph.nodes.find(x => x.id == sourceNode.id().toString());
-        let target = this.graph.nodes.find(x => x.id == targetNode.id().toString());
+        let source = this.graph.getNodesList().find(x => x.id == sourceNode.id().toString());
+        let target = this.graph.getNodesList().find(x => x.id == targetNode.id().toString());
 
         if (source != undefined && target != undefined) {
             this.graph.edges.push(new Edge(source, target));
@@ -459,20 +502,35 @@ export class Edge {
     }
 
     public addNode(node: Node): void {
-        node.toString();
+        let duplicate = false;
+        this.graph.getNodesList().forEach(item => {
+            if (item.period == node.period && item.label == node.label){
+                duplicate = true;
+            }
+        });
 
-        node.id = this.nodeCount.toString();
-        console.log("adding node " + node.label + "with id: " + node.id);
-        this.nodeCount ++;
+        if (!duplicate) {
+            node.id = this.nodeCount.toString();
+            console.log("adding node " + node.label + "with id: " + node.id);
+            this.nodeCount ++;
 
-        if (node.period > this.maxPeriod) {
-            this.maxPeriod = node.period;
+            if (node.period > this.maxPeriod) {
+                this.maxPeriod = node.period;
+            }
+            if (node.period < this.minPeriod) {
+                this.minPeriod = node.period;
+            }
+
+            if (!this.graph.nodes.has(node.period.toString())) {
+                this.graph.nodes.set(node.period.toString(), new Map<string, Node>());
+            }
+            
+            let nodesByPeriod = this.graph.nodes.get(node.period.toString());
+            if (nodesByPeriod) {
+                nodesByPeriod.set(node.label, node);
+                this.graph.isDirty = true;
+            }  
         }
-        if (node.period < this.minPeriod) {
-            this.minPeriod = node.period;
-        }
-
-        this.graph.nodes.push(node);
     }
 
     public clear() {
@@ -480,7 +538,7 @@ export class Edge {
         this.minPeriod = 0;
         this.nodeCount = 0;
 
-        this.graph.nodes = new Array<Node>();
+        this.graph.nodes.clear();
         this.graph.edges = new Array<Edge>();
 
         if (this.cy != undefined) {
