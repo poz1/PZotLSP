@@ -120,15 +120,7 @@ export class PZotGraphResource implements Resource {
     }
 
     async readContents(options?: { encoding?: string | undefined; }): Promise<string> {
-        return this.render();
-    }
-
-    async saveContents(content: string, options?: { encoding?: string; }): Promise<void> {
-        console.log("SAVE? " + content);
-    }
-
-    protected render(): string {
-        return this.engine.init(this);
+        return this.engine.initializeGraphContainer(this);
     }
 
     public updateDependencies(text: string) {
@@ -193,7 +185,7 @@ export class PZotGraphResource implements Resource {
         return litteral;
     }
 
-    public nodeToPZotGraphItem(source: Node) : PZotGraphItem {
+    public nodeToPZotGraphItem(source: Node): PZotGraphItem {
         let node = new PZotGraphItem("undefined");
         node.id = source.id;
         node.label = source.label;
@@ -202,12 +194,13 @@ export class PZotGraphResource implements Resource {
         return node;
     }
 
-    public recomputeGraph(): any {
-        this.engine.recomputeGraph();
+    public renderGraph(): any {
+        console.log("Render Request");
+        this.engine.renderGraph(this.items);
     }
 
-    public redrawGraph(): any {
-        this.engine.redrawGraph();
+    public layoutGraph(): any {
+        this.engine.layoutGraph();
     }
 
     /**
@@ -239,7 +232,6 @@ export class PZotGraphResource implements Resource {
                         this.parseDependencies(dep);
                         this.calculateTimeBounds();
                         // this.logNodes();
-                        this.createGraph();
                     }
                 }
             }
@@ -294,9 +286,9 @@ export class PZotGraphResource implements Resource {
         }
     }
 
-    private createGraph() {
-        this.engine.addData(this.items);
-    }
+    // private createGraph() {
+    //     this.engine.addData(this.items);
+    // }
     
     private calculateTimeBounds() {
         this.items.forEach(node => {
@@ -311,7 +303,6 @@ export class PZotGraphResource implements Resource {
     }
 
     public clearGraph() {
-        this.engine.clear();
         this.items = new Array<PZotGraphItem>();
     }
 }

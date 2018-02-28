@@ -34,6 +34,12 @@ export class PZotGraph {
             return nodesByPeriod.get(label);
         }
     }
+
+    public clear() {
+        this.nodes = new Map<string, Map<string, Node>>();
+        this.edges = new Array<Edge>();
+        this.isDirty = true;
+    }
 }
 
 export class Node {
@@ -67,9 +73,9 @@ export class Edge {
     }
 }
 
- export class PZotGraphEngine {
+export class PZotGraphEngine {
 
-    private resource: PZotGraphResource;
+    private resource: PZotGraphResource | undefined;
     private graph = new PZotGraph();
     private periods = 1;
     private width = 0;
@@ -80,141 +86,53 @@ export class Edge {
     private minPeriod = 0;
     private isNormalizedMode = false;
 
-    private cy: any;
+    private cytoscapeEngine: any;
     private layout: any;
     private mousetrap: any;
+    private cytoscapePluginsReady = false;
 
 
-    public init(resource: PZotGraphResource): string {
-        this.resource = resource;
-        this.mousetrap = require('mousetrap');
-
-        let container = document.createElement("div");
-        
-        let canvas = document.createElement("div");
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
-        canvas.style.position = "inherit";
-        canvas.id = "timeline";
-
-        let updateButton = document.createElement("button");
-        updateButton.addEventListener("click", (e: Event) => this.updateDependecies());
-        updateButton.className = "theia-button";
-        
-        container.appendChild(canvas);
-        // container.appendChild(canvas);
-        container.style.position = "inherit";
-
-        return canvas.outerHTML;
+    constructor() {
+        this.initializeCytoscapePlugins();
     }
 
     /**
-     * recomputeGraph
-     */
-    public recomputeGraph() {
-        let element = document.getElementById('timeline');
-        if (element != null) {
-            this.createGraph(element);
-            this.redrawGraph();
-        }
-    }
-
-    public redrawGraph() {
-        let element = document.getElementById('timeline');
-       
-        if (element != null) {
-            this.width = element.scrollWidth;
-            this.height = element.scrollHeight;
-
-            this.cy.resize();
-
-            let gridOptions = {
-                name: 'grid',
-            
-                fit: true, // whether to fit the viewport to the graph
-                padding: 100, // padding used on fit
-                boundingBox: { x1: 0, y1: 0, w: this.width - 100, h: this.height - 100 }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-                avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
-                avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
-                nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
-                spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
-                condense: false, // uses all available space on false, uses minimal space on true
-                rows: undefined, // force num of rows in the grid
-                cols: this.periods, // force num of columns in the grid
-                position: function( node: any ) { return {col: node.data("period"), row: undefined }}, // returns { row, col } for element
-                sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
-                animate: false, // whether to transition the node positions
-                animationDuration: 500, // duration of animation in ms if enabled
-                animationEasing: undefined, // easing of animation if enabled
-                animateFilter: function ( node: any, i: any ) { return true; }, // a function that determines whether the node should be animated.  
-                // All nodes animated by default on animate enabled.  
-                // Non-animated nodes are positioned immediately when the layout starts
-                ready: undefined, // callback on layoutready
-                stop: undefined, // callback on layoutstop
-                // transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
-            };
-            
-            this.layout = this.cy.layout(gridOptions);
-            this.layout.run();
-            this.cy.fit();
-            this.cy.center();
-        }
-    }
-
-    public addData(data: Array<PZotGraphItem>) {
-        data.forEach(element => {
-            this.addNode(new Node(element));
-
-            element.getChildren().forEach(child => {
-                this.addNode(new Node(child));
-                let parent = this.graph.getNode(element.period.toString(), element.label);
-                let childNode = this.graph.getNode(child.period.toString(), child.label);
-
-                if (parent && childNode) {
-                    this.addEdge(new Edge(parent, childNode));
-                }
-            });
-        });   
-    }
-
-    public setTimelineLayout(periods: number) {
-
-    }
-
-    public normalizePeriods(offset: number) {
-        this.graph.getNodesList().forEach(node => {
-            node.normalizePeriod( - offset);
-        });
-    }
-    
-    private createGraph(container: HTMLElement | null) {
-        if (container != null) {
-
-            this.periods = this.maxPeriod - this.minPeriod + 1;
-            
-            this.normalizePeriods(this.minPeriod);
-            this.isNormalizedMode = true;
-
+    * Creates the DOM element there the graph will be rendered
+    * @param resource  The resource that is initializating the container.
+    * @returns HTML code of the DOM container.
+    */
+    private initializeCytoscapePlugins() {
+        if (!this.cytoscapePluginsReady) {
             let cytoscape = require('cytoscape');
             let edgehandles = require('cytoscape-edgehandles');
-
-            cytoscape.use( edgehandles ); // register extension
-
             let jquery = require('jquery');
             let contextMenus = require('cytoscape-context-menus');
-            
             let popper = require('cytoscape-popper');
-
+            
+            cytoscape.use( edgehandles ); // register extension
             cytoscape.use( popper ); // register extension
-
             contextMenus( cytoscape, jquery ); // register extension
 
-            this.cy = cytoscape({
+            this.cytoscapePluginsReady = true;
+        }
+    }
+
+    /**
+    * Creates the DOM element there the graph will be rendered
+    * @param resource  The resource that is initializating the container.
+    * @returns HTML code of the DOM container.
+    */
+    private initializeGraphEngine() {
+        console.log("1.1 Initialiazing Graph Engine");
+
+        let container = document.getElementById('timeline');
+        if (container != null) {
+
+            this.cytoscapeEngine = cytoscape({
                 container: container,
-                
                 zoomingEnabled: false,
                 userZoomingEnabled: false,
-                //userPanningEnabled: false,
+                // userPanningEnabled: false,
 
                 style: [
                 {
@@ -227,7 +145,6 @@ export class Edge {
                     // 'text-color': '#ffffff'
                     }
                 },
-            
                 {
                     selector: 'edge',
                     style: {
@@ -282,121 +199,271 @@ export class Edge {
                 ],
             });
 
-            // the default values of each option are outlined below:
-            let defaults = {
-                preview: true, // whether to show added edges preview before releasing selection
-                hoverDelay: 150, // time spent hovering over a target node before it is considered selected
-                handleNodes: 'node', // selector/filter function for whether edges can be made from a given node
-                handlePosition: function( node: any ) {
-                return 'middle top'; // sets the position of the handle in the format of "X-AXIS Y-AXIS" such as "left top", "middle top"
-                },
-                handleInDrawMode: false, // whether to show the handle in draw mode
-                edgeType: function( sourceNode: any, targetNode: any ) {
-                // can return 'flat' for flat edges between nodes or 'node' for intermediate node between them
-                // returning null/undefined means an edge can't be added between the two nodes
-                return 'flat';
-                },
-                loopAllowed: function( node: any ) {
-                // for the specified node, return whether edges from itself to itself are allowed
-                return false;
-                },
-                nodeLoopOffset: -50, // offset for edgeType: 'node' loops
-                nodeParams: function( sourceNode: any, targetNode: any ) {
-                // for edges between the specified source and target
-                // return element object to be passed to cy.add() for intermediary node
-                return {};
-                },
-                edgeParams: function( sourceNode: any, targetNode: any, i: any ) {
-                // for edges between the specified source and target
-                // return element object to be passed to cy.add() for edge
-                // NB: i indicates edge index in case of edgeType: 'node'
-                return {};
-                },
-                complete: this.onNewEdge.bind(this)
-            };
-
-            let eh = this.cy.edgehandles( defaults );
-
-            let menuOptions = {
-                // List of initial menu items
-                menuItems: [
-                  {
-                    id: 'remove', // ID of menu item
-                    content: 'remove', // Display content of menu item
-                    tooltipText: 'remove', // Tooltip text for menu item
-                    //image: {src : "remove.svg", width : 12, height : 12, x : 6, y : 4}, // menu icon
-                    // Filters the elements to have this menu item on cxttap
-                    // If the selector is not truthy no elements will have this menu item on cxttap
-                    selector: 'node, edge', 
-                    onClickFunction: function () { // The function to be executed on click
-                      console.log('remove element');
+                // the default values of each option are outlined below:
+                let defaults = {
+                    preview: true, // whether to show added edges preview before releasing selection
+                    hoverDelay: 150, // time spent hovering over a target node before it is considered selected
+                    handleNodes: 'node', // selector/filter function for whether edges can be made from a given node
+                    handlePosition: function( node: any ) {
+                    return 'middle top'; // sets the position of the handle in the format of "X-AXIS Y-AXIS" such as "left top", "middle top"
                     },
-                    disabled: false, // Whether the item will be created as disabled
-                    show: false, // Whether the item will be shown or not
-                    hasTrailingDivider: true, // Whether the item will have a trailing divider
-                    coreAsWell: false // Whether core instance have this item on cxttap
-                  },
-                 /* {
-                    id: 'hide',
-                    content: 'hide',
-                    tooltipText: 'hide',
-                    selector: 'node, edge',
-                    onClickFunction: function () {
-                      console.log('hide element');
+                    handleInDrawMode: false, // whether to show the handle in draw mode
+                    edgeType: function( sourceNode: any, targetNode: any ) {
+                    // can return 'flat' for flat edges between nodes or 'node' for intermediate node between them
+                    // returning null/undefined means an edge can't be added between the two nodes
+                    return 'flat';
                     },
-                    disabled: true
-                  },*/
-                  {
-                    id: 'add-node',
-                    content: 'add node',
-                    tooltipText: 'add node',
-                    //image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
-                    selector: 'node',
-                    coreAsWell: true,
-                    onClickFunction: function () {
-                      console.log('add node');
+                    loopAllowed: function( node: any ) {
+                    // for the specified node, return whether edges from itself to itself are allowed
+                    return false;
+                    },
+                    nodeLoopOffset: -50, // offset for edgeType: 'node' loops
+                    nodeParams: function( sourceNode: any, targetNode: any ) {
+                    // for edges between the specified source and target
+                    // return element object to be passed to cy.add() for intermediary node
+                    return {};
+                    },
+                    edgeParams: function( sourceNode: any, targetNode: any, i: any ) {
+                    // for edges between the specified source and target
+                    // return element object to be passed to cy.add() for edge
+                    // NB: i indicates edge index in case of edgeType: 'node'
+                    return {};
+                    },
+                    complete: this.onNewEdge.bind(this)
+                };
+
+                let eh = this.cytoscapeEngine.edgehandles( defaults );
+
+                let menuOptions = {
+                    // List of initial menu items
+                    menuItems: [
+                    {
+                        id: 'remove', // ID of menu item
+                        content: 'remove', // Display content of menu item
+                        tooltipText: 'remove', // Tooltip text for menu item
+                        // image: {src : "remove.svg", width : 12, height : 12, x : 6, y : 4}, // menu icon
+                        // Filters the elements to have this menu item on cxttap
+                        // If the selector is not truthy no elements will have this menu item on cxttap
+                        selector: 'node, edge', 
+                        onClickFunction: function () { // The function to be executed on click
+                        console.log('remove element');
+                        },
+                        disabled: false, // Whether the item will be created as disabled
+                        show: false, // Whether the item will be shown or not
+                        hasTrailingDivider: true, // Whether the item will have a trailing divider
+                        coreAsWell: false // Whether core instance have this item on cxttap
+                    },
+                    /* {
+                        id: 'hide',
+                        content: 'hide',
+                        tooltipText: 'hide',
+                        selector: 'node, edge',
+                        onClickFunction: function () {
+                        console.log('hide element');
+                        },
+                        disabled: true
+                    },*/
+                    {
+                        id: 'add-node',
+                        content: 'add node',
+                        tooltipText: 'add node',
+                        // image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
+                        selector: 'node',
+                        coreAsWell: true,
+                        onClickFunction: function () {
+                        console.log('add node');
+                        }
                     }
-                  }
-                ],
-                // css classes that menu items will have
-                // menuItemClasses: [
-                //   // add class names to this list
-                // ],
-                // // css classes that context menu will have
-                // contextMenuClasses: [
-                //   // add class names to this list
-                // ]
-            };
+                    ],
+                    // css classes that menu items will have
+                    // menuItemClasses: [
+                    //   // add class names to this list
+                    // ],
+                    // // css classes that context menu will have
+                    // contextMenuClasses: [
+                    //   // add class names to this list
+                    // ]
+                };
 
-            //this.cntxMenu = this.cy.contextMenus( menuOptions );
+                let cntxMenu = this.cytoscapeEngine.contextMenus( menuOptions );
+                
 
-            try {
-                this.graph.getNodesList().forEach(node => {                        
-                    this.cy.add({ 
-                            data: {id : node.id, label: node.label, period: node.period, isParent: node.isParent }, selectable: false
-                    });
+            console.log("2. GraphEngineReady")
+        }
+    }
+
+    /**
+    * Creates the DOM element there the graph will be rendered
+    * @param resource  The resource that is initializating the container.
+    * @returns HTML code of the DOM container.
+    */
+    public initializeGraphContainer(resource: PZotGraphResource): string {
+        this.cytoscapeEngine = undefined;
+        
+        this.resource = resource;
+        this.mousetrap = require('mousetrap');
+
+        let container = document.createElement("div");
+        
+        let canvas = document.createElement("div");
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        canvas.style.position = "inherit";
+        canvas.id = "timeline";
+
+        let updateButton = document.createElement("button");
+        updateButton.addEventListener("click", (e: Event) => this.updateDependecies());
+        updateButton.className = "theia-button";
+        
+        container.appendChild(canvas);
+        // container.appendChild(canvas);
+        container.style.position = "inherit";
+
+        console.log("1. GraphContainerReady")
+
+        return canvas.outerHTML;
+    }
+
+    /**
+    * Creates the DOM element there the graph will be rendered
+    */
+    public renderGraph(data?: Array<PZotGraphItem>) {
+        if (!this.cytoscapeEngine) {
+            this.initializeGraphEngine();
+        }
+
+        this.clear();
+
+        if (data) {
+            this.addData(data);
+        }
+
+        this.populateGraph();
+        this.layoutGraph();
+    }
+
+    /**
+    * Creates the DOM element there the graph will be rendered
+    * @param resource  The resource that is initializating the container.
+    * @returns HTML code of the DOM container.
+    */
+    private populateGraph() {
+        this.periods = this.maxPeriod - this.minPeriod + 1;
+            
+        this.normalizePeriods(this.minPeriod);
+        this.isNormalizedMode = true;
+
+        try {
+            this.graph.getNodesList().forEach(node => {                        
+                this.cytoscapeEngine.add({ 
+                    data: {id : node.id, label: node.label, period: node.period, isParent: node.isParent }, selectable: false
                 });
+            });
 
-                this.graph.edges.forEach(element => {
-                    this.cy.add( { data: { source: element.source.id, target: element.target.id}, selectable: false});
-                });
+            this.graph.edges.forEach(element => {
+                this.cytoscapeEngine.add( { data: { source: element.source.id, target: element.target.id}, selectable: false});
+            });
 
-                this.cy.on('drag', 'node', this.onChangingPeriod.bind(this));
-                //this.cy.on('click', 'node',  this.editNodeLabel.bind(this));
-                this.cy.on('click', this.createNewNode.bind(this));
-                this.cy.on('cxttap',  this.deleteNode.bind(this));
-                //this.cy.on('cxttap', 'node',  this.updateDependecies.bind(this));
+            this.cytoscapeEngine.on('drag', 'node', this.onChangingPeriod.bind(this));
+            // this.cy.on('click', 'node',  this.editNodeLabel.bind(this));
+            this.cytoscapeEngine.on('click', this.createNewNode.bind(this));
+            this.cytoscapeEngine.on('cxttap',  this.deleteNode.bind(this));
+            // this.cy.on('cxttap', 'node',  this.updateDependecies.bind(this));
+            
+            console.log("5. Graph Population Completed");
+        } catch (error) {
+            console.log("Error during graph population: " + error);
+        }
+    }
 
-            } catch (error) {
-                console.log(error);
+    /**
+    * Creates the DOM element there the graph will be rendered
+    */
+    public layoutGraph() {
+        if (this.cytoscapeEngine) {
+            let element = document.getElementById('timeline');
+        
+            if (element != null) {
+                this.width = element.scrollWidth;
+                this.height = element.scrollHeight;
+
+                this.cytoscapeEngine.resize();
+
+                let gridOptions = {
+                    name: 'grid',
+                
+                    fit: true, // whether to fit the viewport to the graph
+                    padding: 100, // padding used on fit
+                    boundingBox: { x1: 0, y1: 0, w: this.width - 100, h: this.height - 100 }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+                    avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+                    avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
+                    nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
+                    spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
+                    condense: false, // uses all available space on false, uses minimal space on true
+                    rows: undefined, // force num of rows in the grid
+                    cols: this.periods, // force num of columns in the grid
+                    position: function( node: any ) { return {col: node.data("period"), row: undefined }}, // returns { row, col } for element
+                    sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
+                    animate: false, // whether to transition the node positions
+                    animationDuration: 500, // duration of animation in ms if enabled
+                    animationEasing: undefined, // easing of animation if enabled
+                    animateFilter: function ( node: any, i: any ) { return true; }, // a function that determines whether the node should be animated.  
+                    // All nodes animated by default on animate enabled.  
+                    // Non-animated nodes are positioned immediately when the layout starts
+                    ready: undefined, // callback on layoutready
+                    stop: undefined, // callback on layoutstop
+                    // transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
+                };
+                
+                this.layout = this.cytoscapeEngine.layout(gridOptions);
+                this.layout.run();
+                this.cytoscapeEngine.fit();
+                this.cytoscapeEngine.center();
             }
-        }   
+
+            console.log("6. Graph Layout Completed");
+        }
+    }
+
+    /**
+    * Creates the DOM element there the graph will be rendered
+    * @param resource  The resource that is initializating the container.
+    * @returns HTML code of the DOM container.
+    */
+    private addData(data: Array<PZotGraphItem>) {
+        data.forEach(element => {
+            this.addNode(new Node(element));
+
+            element.getChildren().forEach(child => {
+                this.addNode(new Node(child));
+                
+
+                let parent = this.graph.getNode(element.period.toString(), element.label);
+                let childNode = this.graph.getNode(child.period.toString(), child.label);
+           
+                if (parent && childNode) {
+                    this.addEdge(new Edge(parent, childNode));
+                }
+            });
+        }); 
+        console.log("4. Graph Data Ready")  
+    }
+
+    /**
+    * Creates the DOM element there the graph will be rendered
+    * @param resource  The resource that is initializating the container.
+    * @returns HTML code of the DOM container.
+    */
+    private normalizePeriods(offset: number) {
+        this.graph.getNodesList().forEach(node => {
+            node.normalizePeriod( - offset);
+        });
     }
 
     /**
      * editNodeLabel
      */
-    public editNodeLabel(event: cytoscape.EventObject) {
+    private editNodeLabel(event: cytoscape.EventObject) {
         console.log("editLabel!");
         let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
             let popper1 = event.target.popper({
@@ -420,7 +487,7 @@ export class Edge {
     /**
      * deleteNode
      */
-    public deleteNode(event: cytoscape.EventObject) {
+    private deleteNode(event: cytoscape.EventObject) {
         console.log("deleteeee");
         let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
         
@@ -428,7 +495,7 @@ export class Edge {
             this.graph.getNodesList().splice(this.graph.getNodesList().indexOf(target));
         }
 
-        this.recomputeGraph();
+        this.renderGraph();
     }
 
     // public deleteEdge(event: cytoscape.EventObject) {
@@ -445,8 +512,8 @@ export class Edge {
     /**
      * createNewNode
      */
-    public createNewNode(event: cytoscape.EventObject) {
-        //if (!event.target.isNode()) {   
+    private createNewNode(event: cytoscape.EventObject) {
+        // if (!event.target.isNode()) {   
             console.log("new node!");
             let node = new PZotGraphItem("undefined");
 
@@ -457,12 +524,12 @@ export class Edge {
             console.log(newPeriod);
 
             this.addNode(new Node(node));
-            this.recomputeGraph();
+            this.renderGraph();
 
-        //}
+        // }
     }
 
-    public onChangingPeriod(event: cytoscape.EventObject) {
+    private onChangingPeriod(event: cytoscape.EventObject) {
         let node = event.target;
         let periodSize = (this.width / this.periods); 
         let newPeriod = Math.round(node.position().x / periodSize);
@@ -473,11 +540,11 @@ export class Edge {
             this.graph.getNodesList()[node.id()].period += this.minPeriod;
         }
 
-        //TODO: bottoncino
-        //this.updateDependecies();
+        // TODO: bottoncino
+        // this.updateDependecies();
     }
 
-    public onNewEdge(sourceNode: any, targetNode: any, addedEles: any ) {
+    private onNewEdge(sourceNode: any, targetNode: any, addedEles: any ) {
 
         let source = this.graph.getNodesList().find(x => x.id == sourceNode.id().toString());
         let target = this.graph.getNodesList().find(x => x.id == targetNode.id().toString());
@@ -487,31 +554,31 @@ export class Edge {
         }
     }
 
-    public updateDependecies() {
-        console.log("Updating!");
+    private updateDependecies() {
         if (this.isNormalizedMode) {
             this.normalizePeriods( - this.minPeriod);
             this.isNormalizedMode = false;
         }
 
-        this.resource.graphToDependecies(this.graph);
+        if (this.resource) {
+            this.resource.graphToDependecies(this.graph);
+        }
     }
 
-    public addEdge(edge: Edge): void {
+    private addEdge(edge: Edge): void {
         this.graph.edges.push(edge);
     }
 
-    public addNode(node: Node): void {
+    private addNode(node: Node): void {
         let duplicate = false;
         this.graph.getNodesList().forEach(item => {
-            if (item.period == node.period && item.label == node.label){
+            if (item.period == node.period && item.label == node.label) {
                 duplicate = true;
             }
         });
 
         if (!duplicate) {
             node.id = this.nodeCount.toString();
-            console.log("adding node " + node.label + "with id: " + node.id);
             this.nodeCount ++;
 
             if (node.period > this.maxPeriod) {
@@ -533,16 +600,14 @@ export class Edge {
         }
     }
 
-    public clear() {
+    private clear() {
         this.maxPeriod = 0;
         this.minPeriod = 0;
         this.nodeCount = 0;
 
-        this.graph.nodes.clear();
-        this.graph.edges = new Array<Edge>();
+        this.graph.clear();
+        this.cytoscapeEngine.elements().remove();
 
-        if (this.cy != undefined) {
-            this.cy.elements().remove();
-        }
+        console.log("3. Graph data clear")
     }
 }

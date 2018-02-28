@@ -24,6 +24,7 @@
     "cytoscape-qtip": "^2.7.1",
     "electron": "^1.6.11",
     "mousetrap": "^1.6.1",
+    "typedoc": "^0.10.0",
     "vis": "^4.21.0"
   },
   "devDependencies": {

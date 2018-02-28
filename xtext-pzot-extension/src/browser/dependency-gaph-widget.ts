@@ -16,37 +16,33 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         this.toDispose.push(resource);
         if (resource.onDidChangeContents) {
             this.toDispose.push(resource.onDidChangeContents(() => {
-                // if (!resource.updatingDeps) {
-                    this.resource.clearGraph();
-                    this.resource.parseDocument();
-                    this.update();
-                // } else {
-                //     this.resource.updatingDeps = false;
-                // }
+                console.log("Widegt content Update");
+                this.update();
             }));
         }
         this.activate();
     }
 
     onActivateRequest(msg: Message): void {
+        console.log("Activating Widegt");
         super.onActivateRequest(msg);
         this.resource.readContents().then(html =>
             this.node.innerHTML = html
-        );
-        this.resource.clearGraph();
-        this.resource.parseDocument();
-        this.node.focus();
-        this.update();
+        ).then( () => { this.update(); });
     }
 
     onUpdateRequest(msg: Message): void {
+        console.log("Widegt Update");
         super.onUpdateRequest(msg);
-        this.resource.recomputeGraph();
+        
+        this.resource.clearGraph();
+        this.resource.parseDocument();
+        this.resource.renderGraph();
     }
 
     onResize(msg: Widget.ResizeMessage) {
-        console.log("resize!");
+        console.log("Widegt Resize");
         super.onResize(msg);
-        this.resource.redrawGraph();
+        this.resource.layoutGraph();
     }
 }
