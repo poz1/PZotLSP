@@ -1,6 +1,7 @@
 import { PZotGraphItem, PZotGraphResource } from './pzot-graph-resource';
 import cytoscape = require('cytoscape');
 import edgehandles from 'cytoscape-edgehandles';
+import '../../src/browser/style/cytoscape-context-menu.css';
 
 export class PZotGraph {
     private nodesList = new Array<Node>();
@@ -32,6 +33,57 @@ export class PZotGraph {
         let nodesByPeriod = this.nodes.get(period);
         if (nodesByPeriod) {
             return nodesByPeriod.get(label);
+        }
+    }
+
+    public getEdge(source?: Node, target?: Node): Edge | Array<Edge> {        
+        if (source && target) {
+            this.edges.forEach(edge => {
+                if (edge.source == source && edge.target == target) {
+                    return edge;
+                }
+            });
+        }
+
+        let result = new Array<Edge>();
+
+        if (source) {
+            this.edges.forEach(edge => {
+                if (edge.source == source) {
+                    result.push(edge);
+                }
+            });
+        }
+
+        if (target) {
+            this.edges.forEach(edge => {
+                if (edge.target == target) {
+                    result.push(edge);
+                }
+            });
+        }
+
+        return result;
+    }
+
+    public removeNode(period: string, label: string): void {
+        let nodesByPeriod = this.nodes.get(period);
+        if (nodesByPeriod) {
+            nodesByPeriod.delete(label);
+            this.isDirty = true;
+        }
+    }
+
+    public removeEdge(source: Node, target: Node): void {
+        let edge;
+        this.edges.forEach(item => {
+            if (item.source == source && item.target == target) {
+                edge = item;
+            }
+        });
+        
+        if (edge) {
+            this.edges.splice(this.edges.indexOf(edge), 1);
         }
     }
 
@@ -89,8 +141,8 @@ export class PZotGraphEngine {
     private cytoscapeEngine: any;
     private layout: any;
     private mousetrap: any;
-    private cytoscapePluginsReady = false;
 
+    private contextMenu: any;
 
     constructor() {
         this.initializeCytoscapePlugins();
@@ -102,21 +154,49 @@ export class PZotGraphEngine {
     * @returns HTML code of the DOM container.
     */
     private initializeCytoscapePlugins() {
-        if (!this.cytoscapePluginsReady) {
-            let cytoscape = require('cytoscape');
-            let edgehandles = require('cytoscape-edgehandles');
-            let jquery = require('jquery');
-            let contextMenus = require('cytoscape-context-menus');
-            let popper = require('cytoscape-popper');
+        let cytoscape = require('cytoscape');
+        let edgehandles = require('cytoscape-edgehandles');
+        let jquery = require('jquery');
+        let contextMenus = require('cytoscape-context-menus');
+        let popper = require('cytoscape-popper');
             
-            cytoscape.use( edgehandles ); // register extension
-            cytoscape.use( popper ); // register extension
-            contextMenus( cytoscape, jquery ); // register extension
-
-            this.cytoscapePluginsReady = true;
-        }
+        cytoscape.use( edgehandles ); // register extension
+        cytoscape.use( popper ); // register extension
+        contextMenus( cytoscape, jquery ); // register extension
     }
 
+    private initializeDoubleArrowShape() {
+        // defineArrowShape( 'double-arrow', {
+        //         points: [
+        //           -0.15, -0.3,
+        //           0, 0,
+        //           0.15, -0.3,
+        //           -0.15, -0.3
+        //         ],
+            
+        //         pointsSecond: [
+        //           0, -0.3,
+        //           0.15, -0.6,
+        //           -0.15, -0.6
+        //         ],
+            
+        //         collide: function( x: any, y, size, angle, translation, padding ){
+        //           var triPts = pointsToArr( transformPoints( this.points, size  2 * padding, angle, translation ) );
+        //           var teePts = pointsToArr( transformPoints( this.pointsSecond, size  2 * padding, angle, translation ) );
+            
+        //           var inside = math.pointInsidePolygonPoints( x, y, triPts ) || math.pointInsidePolygonPoints( x, y, teePts );
+            
+        //           return inside;
+        //         },
+            
+        //         draw: function( context, size, angle, translation ){
+        //           var triPts = transformPoints( this.points, size, angle, translation );
+        //           var teePts = transformPoints( this.pointsSecond, size, angle, translation );
+            
+        //           renderer.arrowShapeImpl( this.name )( context, triPts, teePts );
+        //         }
+        //       } );
+    }
     /**
     * Creates the DOM element there the graph will be rendered
     * @param resource  The resource that is initializating the container.
@@ -237,6 +317,20 @@ export class PZotGraphEngine {
                 let menuOptions = {
                     // List of initial menu items
                     menuItems: [
+                        {
+                            id: 'rename', // ID of menu item
+                            content: 'rename', // Display content of menu item
+                            tooltipText: 'rename', // Tooltip text for menu item
+                            // image: {src : "remove.svg", width : 12, height : 12, x : 6, y : 4}, // menu icon
+                            // Filters the elements to have this menu item on cxttap
+                            // If the selector is not truthy no elements will have this menu item on cxttap
+                            selector: 'node', 
+                            onClickFunction: this.renameGraphNode.bind(this),
+                            disabled: false, // Whether the item will be created as disabled
+                            show: true, // Whether the item will be shown or not
+                            hasTrailingDivider: true, // Whether the item will have a trailing divider
+                            coreAsWell: false // Whether core instance have this item on cxttap
+                        },
                     {
                         id: 'remove', // ID of menu item
                         content: 'remove', // Display content of menu item
@@ -245,49 +339,26 @@ export class PZotGraphEngine {
                         // Filters the elements to have this menu item on cxttap
                         // If the selector is not truthy no elements will have this menu item on cxttap
                         selector: 'node, edge', 
-                        onClickFunction: function () { // The function to be executed on click
-                        console.log('remove element');
-                        },
+                        onClickFunction: this.deleteGraphElement.bind(this),
                         disabled: false, // Whether the item will be created as disabled
-                        show: false, // Whether the item will be shown or not
+                        show: true, // Whether the item will be shown or not
                         hasTrailingDivider: true, // Whether the item will have a trailing divider
                         coreAsWell: false // Whether core instance have this item on cxttap
                     },
-                    /* {
-                        id: 'hide',
-                        content: 'hide',
-                        tooltipText: 'hide',
-                        selector: 'node, edge',
-                        onClickFunction: function () {
-                        console.log('hide element');
-                        },
-                        disabled: true
-                    },*/
                     {
                         id: 'add-node',
                         content: 'add node',
                         tooltipText: 'add node',
                         // image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
-                        selector: 'node',
+                        selector: '',
                         coreAsWell: true,
-                        onClickFunction: function () {
-                        console.log('add node');
-                        }
+                        onClickFunction: this.addGraphNode.bind(this)
                     }
-                    ],
-                    // css classes that menu items will have
-                    // menuItemClasses: [
-                    //   // add class names to this list
-                    // ],
-                    // // css classes that context menu will have
-                    // contextMenuClasses: [
-                    //   // add class names to this list
-                    // ]
+                    ]
                 };
 
-                let cntxMenu = this.cytoscapeEngine.contextMenus( menuOptions );
+                this.contextMenu = this.cytoscapeEngine.contextMenus( menuOptions );
                 
-
             console.log("2. GraphEngineReady")
         }
     }
@@ -332,12 +403,12 @@ export class PZotGraphEngine {
             this.initializeGraphEngine();
         }
 
-        this.clear();
-
         if (data) {
+            this.clear();
             this.addData(data);
         }
 
+        this.clearGraph();
         this.populateGraph();
         this.layoutGraph();
     }
@@ -366,8 +437,8 @@ export class PZotGraphEngine {
 
             this.cytoscapeEngine.on('drag', 'node', this.onChangingPeriod.bind(this));
             // this.cy.on('click', 'node',  this.editNodeLabel.bind(this));
-            this.cytoscapeEngine.on('click', this.createNewNode.bind(this));
-            this.cytoscapeEngine.on('cxttap',  this.deleteNode.bind(this));
+            // this.cytoscapeEngine.on('click', this.createNewNode.bind(this));
+            // this.cytoscapeEngine.on('cxttap',  this.deleteNode.bind(this));
             // this.cy.on('cxttap', 'node',  this.updateDependecies.bind(this));
             
             console.log("5. Graph Population Completed");
@@ -461,9 +532,9 @@ export class PZotGraphEngine {
     }
 
     /**
-     * editNodeLabel
+     * renameGraphNode
      */
-    private editNodeLabel(event: cytoscape.EventObject) {
+    private renameGraphNode(event: cytoscape.EventObject) {
         console.log("editLabel!");
         let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
             let popper1 = event.target.popper({
@@ -485,36 +556,32 @@ export class PZotGraphEngine {
     }
 
     /**
-     * deleteNode
+     * deleteGraphElement
      */
-    private deleteNode(event: cytoscape.EventObject) {
-        console.log("deleteeee");
-        let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
+    private deleteGraphElement(event: cytoscape.EventObject) {
+        if (event.target.isNode()) {            
+            let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
+            console.log(target);
+            if (target != undefined) {
+                this.graph.removeNode(target.period.toString(), target.label);
+            }
+        }
         
-        if (target != undefined) {
-            this.graph.getNodesList().splice(this.graph.getNodesList().indexOf(target));
+        if (event.target.isEdge()) {
+            let source = this.graph.getNodesList().find(x => x.id == event.target.source().id().toString());
+            let target = this.graph.getNodesList().find(x => x.id == event.target.target().id().toString());
+            if (target && source) {
+                this.graph.removeEdge(source, target);
+            }
         }
 
         this.renderGraph();
     }
 
-    // public deleteEdge(event: cytoscape.EventObject) {
-    //     console.log("deleteeee");
-    //     let target = this.graph.edges.find(x => x.source.id == event.target.source().id().toString());
-        
-    //     if (target != undefined) {
-    //         this.graph.nodes.splice(this.graph.nodes.indexOf(target));
-    //     }
-
-    //     this.recomputeGraph();
-    // }
-
     /**
      * createNewNode
      */
-    private createNewNode(event: cytoscape.EventObject) {
-        // if (!event.target.isNode()) {   
-            console.log("new node!");
+    private addGraphNode(event: cytoscape.EventObject) {
             let node = new PZotGraphItem("undefined");
 
             let periodSize = (this.width / this.periods); 
@@ -525,8 +592,6 @@ export class PZotGraphEngine {
 
             this.addNode(new Node(node));
             this.renderGraph();
-
-        // }
     }
 
     private onChangingPeriod(event: cytoscape.EventObject) {
@@ -606,8 +671,12 @@ export class PZotGraphEngine {
         this.nodeCount = 0;
 
         this.graph.clear();
-        this.cytoscapeEngine.elements().remove();
 
         console.log("3. Graph data clear")
+    }
+
+    private clearGraph() {
+        this.cytoscapeEngine.elements().remove();
+        console.log("3.1 Graph clear")
     }
 }
