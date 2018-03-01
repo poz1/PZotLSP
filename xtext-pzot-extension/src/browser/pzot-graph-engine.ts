@@ -2,6 +2,7 @@ import { PZotGraphItem, PZotGraphResource } from './pzot-graph-resource';
 import cytoscape = require('cytoscape');
 import edgehandles from 'cytoscape-edgehandles';
 import '../../src/browser/style/cytoscape-context-menu.css';
+import tippy = require('tippy.js');
 
 export class PZotGraph {
     private nodesList = new Array<Node>();
@@ -535,24 +536,33 @@ export class PZotGraphEngine {
      * renameGraphNode
      */
     private renameGraphNode(event: cytoscape.EventObject) {
-        console.log("editLabel!");
+        console.log("editLabel!" + event.target);
         let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
-            let popper1 = event.target.popper({
-                content: () => {
-                        let div = document.createElement('div');
+        if (event.target) {
+            try {
+                
+                let ref = event.target.popperRef(); // used only for positioning
+                // using tippy ^2.0.0
+                let tipp = tippy(ref, { // tippy options:
+                    html: (() => {
+                        let content = document.createElement('div');
+                        let form = document.createElement('button');
+                        content.appendChild(form);
+                        form.innerHTML = 'Tippy content';
+                        return content;
+                    }),
+                    trigger: 'manual',
+                    hideOnClick: false,
+                    sticky: true
+                }).tooltips[0];
+                        
+                console.log(tipp);
 
-                        if (target != undefined) {
-
-                        let form = document.createElement("form");
-
-                        form.innerHTML = target.label;
-                        div.appendChild(form);
-                        document.body.appendChild(div);
-                    }
-                    return div;
-                },
-                popper: {} // my popper options here
-            });
+                tipp.show();
+            } catch (error) {
+                    console.log(error);
+            }
+        }
     }
 
     /**

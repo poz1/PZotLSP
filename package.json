@@ -28,6 +28,7 @@
     "dagre": "^0.8.2",
     "degree": "^1.1.1",
     "graphdracula": "^1.2.0",
-    "raphael": "^2.2.7"
+    "raphael": "^2.2.7",
+    "tippy.js": "^2.2.3"
   }
 }
