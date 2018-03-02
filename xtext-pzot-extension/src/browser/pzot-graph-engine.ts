@@ -145,6 +145,10 @@ export class PZotGraphEngine {
 
     private contextMenu: any;
 
+    private tippyShown = false;
+    private tippyBounds: any;
+    private tippyButton: any;
+
     constructor() {
         this.initializeCytoscapePlugins();
     }
@@ -209,6 +213,7 @@ export class PZotGraphEngine {
         let container = document.getElementById('timeline');
         if (container != null) {
 
+            container.addEventListener("click", this.lol.bind(this));
             this.cytoscapeEngine = cytoscape({
                 container: container,
                 zoomingEnabled: false,
@@ -438,13 +443,32 @@ export class PZotGraphEngine {
 
             this.cytoscapeEngine.on('drag', 'node', this.onChangingPeriod.bind(this));
             // this.cy.on('click', 'node',  this.editNodeLabel.bind(this));
-            // this.cytoscapeEngine.on('click', this.createNewNode.bind(this));
+            // this.cytoscapeEngine.on('click', this.lol.bind(this));
             // this.cytoscapeEngine.on('cxttap',  this.deleteNode.bind(this));
             // this.cy.on('cxttap', 'node',  this.updateDependecies.bind(this));
             
             console.log("5. Graph Population Completed");
         } catch (error) {
             console.log("Error during graph population: " + error);
+        }
+    }
+
+    /**
+     * lol
+     */
+    public lol(event: any) {
+        console.log("lolling");
+        if (this.tippyShown) {
+            console.log("lolling and tippy");
+            console.log("Click Pos: " + event.clientX + ", " + event.clientY);
+            let rect = this.tippyBounds.getBoundingClientRect();
+            console.log("Tippy Pos: " + rect.left + ", " + rect.top);
+
+            if ( event.clientX > rect.left && event.clientX < rect.left + rect.width && 
+                event.clientY > rect.top && event.clientY < rect.top + rect.height) {
+                    console.log("Tippy TAP");
+                    this.tippyButton.click();
+                }
         }
     }
 
@@ -546,9 +570,10 @@ export class PZotGraphEngine {
                 let tipp = tippy(ref, { // tippy options:
                     html: (() => {
                         let content = document.createElement('div');
-                        let form = document.createElement('button');
-                        content.appendChild(form);
-                        form.innerHTML = 'Tippy content';
+                        this.tippyButton = document.createElement('button');
+                        //this.tippyButton.onClick()
+                        content.appendChild(this.tippyButton);
+                        this.tippyButton.innerHTML = 'Tippy content';
                         return content;
                     }),
                     trigger: 'manual',
@@ -556,9 +581,13 @@ export class PZotGraphEngine {
                     sticky: true
                 }).tooltips[0];
                         
-                console.log(tipp);
+                console.log("size: " + tipp.popper);
 
                 tipp.show();
+
+                this.tippyShown = true;
+                this.tippyBounds = tipp.popper;
+                
             } catch (error) {
                     console.log(error);
             }
