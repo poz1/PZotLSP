@@ -37,6 +37,21 @@ export class PZotGraph {
         }
     }
 
+    /**
+     * renameNode
+     */
+    public renameNode(period: string, label: string, newLabel: string) {
+        let nodesByPeriod = this.nodes.get(period);
+        if (nodesByPeriod) {
+            let node = nodesByPeriod.get(label);
+            
+            if (node) {
+                node.label = newLabel;
+                this.isDirty = true;
+            }
+        }
+    }
+
     public getEdge(source?: Node, target?: Node): Edge | Array<Edge> {        
         if (source && target) {
             this.edges.forEach(edge => {
@@ -126,6 +141,34 @@ export class Edge {
     }
 }
 
+class Popup {
+    private popper: any;
+    private input: HTMLInputElement;
+    private div: HTMLElement;
+    
+    constructor(popper: any, containerDiv: HTMLElement, inputBox: HTMLInputElement) {
+        this.popper = popper;
+        this.div = containerDiv;
+        this.input = inputBox;
+    }
+
+    /**
+     * getLabel
+     */
+    public getLabel() {
+        return this.input.value;
+    }
+
+    /**
+     * dismiss
+     */
+    public dismiss() {
+        console.log(this.div);
+        this.popper.destroy();
+        document.getElementsByTagName("BODY")[0].removeChild(this.div);
+    }
+}
+
 export class PZotGraphEngine {
 
     private resource: PZotGraphResource | undefined;
@@ -144,10 +187,7 @@ export class PZotGraphEngine {
     private mousetrap: any;
 
     private contextMenu: any;
-
-    private tippyShown = false;
-    private tippyBounds: any;
-    private tippyButton: any;
+    private popus = new Map<string, Popup>();
 
     constructor() {
         this.initializeCytoscapePlugins();
@@ -163,10 +203,10 @@ export class PZotGraphEngine {
         let edgehandles = require('cytoscape-edgehandles');
         let jquery = require('jquery');
         let contextMenus = require('cytoscape-context-menus');
-        let popper = require('cytoscape-popper');
+        let cytoPopper = require('cytoscape-popper');
             
         cytoscape.use( edgehandles ); // register extension
-        cytoscape.use( popper ); // register extension
+        cytoscape.use( cytoPopper ); // register extension
         contextMenus( cytoscape, jquery ); // register extension
     }
 
@@ -213,7 +253,6 @@ export class PZotGraphEngine {
         let container = document.getElementById('timeline');
         if (container != null) {
 
-            container.addEventListener("click", this.lol.bind(this));
             this.cytoscapeEngine = cytoscape({
                 container: container,
                 zoomingEnabled: false,
@@ -454,25 +493,6 @@ export class PZotGraphEngine {
     }
 
     /**
-     * lol
-     */
-    public lol(event: any) {
-        console.log("lolling");
-        if (this.tippyShown) {
-            console.log("lolling and tippy");
-            console.log("Click Pos: " + event.clientX + ", " + event.clientY);
-            let rect = this.tippyBounds.getBoundingClientRect();
-            console.log("Tippy Pos: " + rect.left + ", " + rect.top);
-
-            if ( event.clientX > rect.left && event.clientX < rect.left + rect.width && 
-                event.clientY > rect.top && event.clientY < rect.top + rect.height) {
-                    console.log("Tippy TAP");
-                    this.tippyButton.click();
-                }
-        }
-    }
-
-    /**
     * Creates the DOM element there the graph will be rendered
     */
     public layoutGraph() {
@@ -564,33 +584,55 @@ export class PZotGraphEngine {
         let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
         if (event.target) {
             try {
-                
-                let ref = event.target.popperRef(); // used only for positioning
-                // using tippy ^2.0.0
-                let tipp = tippy(ref, { // tippy options:
-                    html: (() => {
-                        let content = document.createElement('div');
-                        this.tippyButton = document.createElement('button');
-                        //this.tippyButton.onClick()
-                        content.appendChild(this.tippyButton);
-                        this.tippyButton.innerHTML = 'Tippy content';
-                        return content;
-                    }),
-                    trigger: 'manual',
-                    hideOnClick: false,
-                    sticky: true
-                }).tooltips[0];
-                        
-                console.log("size: " + tipp.popper);
+                if (target) {
 
-                tipp.show();
+                    let div = document.createElement('div');
+                    let tippyInput = document.createElement('input');
+                    let tippyButton = document.createElement('button');
+                    let id = target.period + ":%:" + target.label;
 
-                this.tippyShown = true;
-                this.tippyBounds = tipp.popper;
-                
+                    let popper = event.target.popper({
+                        content: () => {    
+                            div.style.padding = "10px";
+                            tippyButton.id = id;
+                            tippyButton.onclick = this.changeNodeName.bind(this);
+
+                            div.appendChild(tippyInput);
+                            div.appendChild(tippyButton);
+
+                            tippyButton.innerHTML = 'ChangeName';
+                    
+                        document.body.appendChild( div );
+                    
+                        return div;
+                    },
+                        popper: {}
+                    });
+
+                    this.popus.set(id , new Popup(popper, div, tippyInput));
+                }
             } catch (error) {
-                    console.log(error);
+                console.log("popper error: " + error);
             }
+        }
+    }
+
+    private changeNodeName(ev: MouseEvent) {
+        let button = ev.target as HTMLButtonElement;
+
+        let popup = this.popus.get(button.id);
+
+        if (popup) {
+            let info = button.id.split(":%:");
+
+            console.log("Node p: " + info[0] + " l: " + info[1]);
+            
+            this.graph.renameNode(info[0], info[1], popup.getLabel())
+            
+            popup.dismiss();
+
+            console.log("dismissed pop");
+            this.renderGraph();
         }
     }
 

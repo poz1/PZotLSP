@@ -17,6 +17,7 @@
     "@theia/workspace": "latest",
     "@theia/xtext-pzot-extension": "0.1.0",
     "@types/cytoscape": "^3.1.6",
+    "@types/popper.js": "^1.11.0",
     "@types/vis": "^4.21.1",
     "cytoscape-context-menus": "^3.0.5",
     "cytoscape-edgehandles": "^3.2.1",
