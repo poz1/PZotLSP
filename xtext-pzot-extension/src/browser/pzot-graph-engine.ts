@@ -364,8 +364,8 @@ export class PZotGraphEngine {
                     menuItems: [
                         {
                             id: 'rename', // ID of menu item
-                            content: 'rename', // Display content of menu item
-                            tooltipText: 'rename', // Tooltip text for menu item
+                            content: 'Rename', // Display content of menu item
+                            tooltipText: 'Rename', // Tooltip text for menu item
                             // image: {src : "remove.svg", width : 12, height : 12, x : 6, y : 4}, // menu icon
                             // Filters the elements to have this menu item on cxttap
                             // If the selector is not truthy no elements will have this menu item on cxttap
@@ -376,29 +376,38 @@ export class PZotGraphEngine {
                             hasTrailingDivider: true, // Whether the item will have a trailing divider
                             coreAsWell: false // Whether core instance have this item on cxttap
                         },
-                    {
-                        id: 'remove', // ID of menu item
-                        content: 'remove', // Display content of menu item
-                        tooltipText: 'remove', // Tooltip text for menu item
-                        // image: {src : "remove.svg", width : 12, height : 12, x : 6, y : 4}, // menu icon
-                        // Filters the elements to have this menu item on cxttap
-                        // If the selector is not truthy no elements will have this menu item on cxttap
-                        selector: 'node, edge', 
-                        onClickFunction: this.deleteGraphElement.bind(this),
-                        disabled: false, // Whether the item will be created as disabled
-                        show: true, // Whether the item will be shown or not
-                        hasTrailingDivider: true, // Whether the item will have a trailing divider
-                        coreAsWell: false // Whether core instance have this item on cxttap
-                    },
-                    {
-                        id: 'add-node',
-                        content: 'add node',
-                        tooltipText: 'add node',
-                        // image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
-                        selector: '',
-                        coreAsWell: true,
-                        onClickFunction: this.addGraphNode.bind(this)
-                    }
+                        {
+                            id: 'remove', // ID of menu item
+                            content: 'Remove', // Display content of menu item
+                            tooltipText: 'Remove', // Tooltip text for menu item
+                            // image: {src : "remove.svg", width : 12, height : 12, x : 6, y : 4}, // menu icon
+                            // Filters the elements to have this menu item on cxttap
+                            // If the selector is not truthy no elements will have this menu item on cxttap
+                            selector: 'node, edge', 
+                            onClickFunction: this.deleteGraphElement.bind(this),
+                            disabled: false, // Whether the item will be created as disabled
+                            show: true, // Whether the item will be shown or not
+                            hasTrailingDivider: true, // Whether the item will have a trailing divider
+                            coreAsWell: false // Whether core instance have this item on cxttap
+                        },
+                        {
+                            id: 'add-node',
+                            content: 'Add Node',
+                            tooltipText: 'Add Node',
+                            // image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
+                            selector: '',
+                            coreAsWell: true,
+                            onClickFunction: this.addGraphNode.bind(this)
+                        },
+                        {
+                            id: 'compute-formula',
+                            content: 'Compute Formula',
+                            tooltipText: 'Compute Formula',
+                            // image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
+                            selector: '',
+                            coreAsWell: true,
+                            onClickFunction: this.updateDependeciesFormula.bind(this)
+                        }
                     ]
                 };
 
@@ -428,7 +437,7 @@ export class PZotGraphEngine {
         canvas.id = "timeline";
 
         let updateButton = document.createElement("button");
-        updateButton.addEventListener("click", (e: Event) => this.updateDependecies());
+        updateButton.addEventListener("click", (e: Event) => this.updateDependeciesFormula());
         updateButton.className = "theia-button";
         
         container.appendChild(canvas);
@@ -609,6 +618,14 @@ export class PZotGraphEngine {
                         popper: {}
                     });
 
+
+                    let update = () => {
+                        popper.scheduleUpdate();
+                    };
+                    
+                    event.target.on('position', update);
+                    this.cytoscapeEngine.on('pan zoom resize', update);
+
                     this.popus.set(id , new Popup(popper, div, tippyInput));
                 }
             } catch (error) {
@@ -623,15 +640,9 @@ export class PZotGraphEngine {
         let popup = this.popus.get(button.id);
 
         if (popup) {
-            let info = button.id.split(":%:");
-
-            console.log("Node p: " + info[0] + " l: " + info[1]);
-            
+            let info = button.id.split(":%:");            
             this.graph.renameNode(info[0], info[1], popup.getLabel())
-            
             popup.dismiss();
-
-            console.log("dismissed pop");
             this.renderGraph();
         }
     }
@@ -700,7 +711,7 @@ export class PZotGraphEngine {
         }
     }
 
-    private updateDependecies() {
+    private updateDependeciesFormula() {
         if (this.isNormalizedMode) {
             this.normalizePeriods( - this.minPeriod);
             this.isNormalizedMode = false;
