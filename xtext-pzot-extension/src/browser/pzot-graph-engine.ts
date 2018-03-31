@@ -1,8 +1,8 @@
 import { PZotGraphItem, PZotGraphResource } from './pzot-graph-resource';
 import cytoscape = require('cytoscape');
 import edgehandles from 'cytoscape-edgehandles';
-import '../../src/browser/style/cytoscape-context-menu.css';
-import tippy = require('tippy.js');
+
+import '../../src/browser/style/index.css';
 
 export class PZotGraph {
     private nodesList = new Array<Node>();
@@ -187,7 +187,7 @@ export class PZotGraphEngine {
     private mousetrap: any;
 
     private contextMenu: any;
-    private popus = new Map<string, Popup>();
+    private popups = new Map<string, Popup>();
 
     constructor() {
         this.initializeCytoscapePlugins();
@@ -204,10 +204,12 @@ export class PZotGraphEngine {
         let jquery = require('jquery');
         let contextMenus = require('cytoscape-context-menus');
         let cytoPopper = require('cytoscape-popper');
-            
+        let cytoCanvas = require('cytoscape-canvas');
+
         cytoscape.use( edgehandles ); // register extension
         cytoscape.use( cytoPopper ); // register extension
         contextMenus( cytoscape, jquery ); // register extension
+        cytoCanvas( cytoscape ); // register extension
     }
 
     private initializeDoubleArrowShape() {
@@ -242,6 +244,7 @@ export class PZotGraphEngine {
         //         }
         //       } );
     }
+
     /**
     * Creates the DOM element there the graph will be rendered
     * @param resource  The resource that is initializating the container.
@@ -257,7 +260,7 @@ export class PZotGraphEngine {
                 container: container,
                 zoomingEnabled: false,
                 userZoomingEnabled: false,
-                // userPanningEnabled: false,
+                userPanningEnabled: false,
 
                 style: [
                 {
@@ -413,6 +416,8 @@ export class PZotGraphEngine {
 
                 this.contextMenu = this.cytoscapeEngine.contextMenus( menuOptions );
                 
+                this.renderGraphCanvas();
+
             console.log("2. GraphEngineReady")
         }
     }
@@ -447,6 +452,67 @@ export class PZotGraphEngine {
         console.log("1. GraphContainerReady")
 
         return canvas.outerHTML;
+    }
+
+    private renderGraphCanvas() {
+        console.log("RenderGraphCanvas");
+
+        let layer = this.cytoscapeEngine.cyCanvas({
+            zIndex: 1,
+            pixelRatio: "auto",
+        });
+
+
+        let fontSize = 24;
+    
+
+       
+        //console.log("lowerBound: " + lowerBound);
+
+        this.cytoscapeEngine.on("render cyCanvas.resize", (ev: any) => {
+            let canvas = layer.getCanvas();
+            let ctx = canvas.getContext("2d");
+
+            layer.resetTransform(ctx);
+            // layer.clear(ctx);
+            // layer.setTransform(ctx);
+        
+            // ctx.save();
+            // Draw a background
+            // ctx.drawImage(background, 0, 0);
+            // console.log("CHeight: " + canvas.height);
+            // console.log("CWidth: " + canvas.width);
+
+            // console.log("Height: " + this.cytoscapeEngine.container().offsetHeight);
+            // console.log("Width: " + this.cytoscapeEngine.container().offsetWidth);
+    
+            ctx.strokeRect(100, 100, canvas.width - 200, canvas.height - 200);
+            
+            let lowerBound = canvas.height - fontSize;
+            let periodWidth = canvas.width / (this.periods + 1);
+            console.log("CWidth: " + canvas.width);
+            console.log("periodWidth: " + periodWidth);
+
+            for (let index = 0; index < this.periods; index++) {
+                // Draw text that follows the model
+                ctx.font = fontSize +  "px Helvetica";
+                ctx.fillStyle = "white";
+                ctx.fillText(index, 100 + ((periodWidth * (index + 1)) - ( periodWidth / 2)),  lowerBound);
+                console.log("NEW PERIOD LABEL: " + index + " X: " + ((periodWidth * (index + 1)) - ( periodWidth / 2)) + " Y: " + lowerBound);
+            }
+
+            // Draw shadows under nodes
+            // ctx.shadowColor = "white";
+            // ctx.shadowBlur = 25 * cy.zoom();
+            // ctx.fillStyle = "white";
+            // cy.nodes().forEach(node => {
+            //   const pos = node.position();
+            //   ctx.beginPath();
+            //   ctx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI, false);
+            //   ctx.fill();
+            // });
+            // ctx.restore();
+        });
     }
 
     /**
@@ -518,8 +584,8 @@ export class PZotGraphEngine {
                     name: 'grid',
                 
                     fit: true, // whether to fit the viewport to the graph
-                    padding: 100, // padding used on fit
-                    boundingBox: { x1: 0, y1: 0, w: this.width - 100, h: this.height - 100 }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+                    padding: 0, // padding used on fit
+                    boundingBox: { x1: 100, y1: 100, w: this.width - 100, h: this.height - 100 }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
                     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
                     avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
                     nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
@@ -595,29 +661,38 @@ export class PZotGraphEngine {
             try {
                 if (target) {
 
-                    let div = document.createElement('div');
-                    let tippyInput = document.createElement('input');
-                    let tippyButton = document.createElement('button');
+                    let popupContainer = document.createElement('div');
+                    popupContainer.className = "popup-container";
+
+                    let labelInput = document.createElement('input');
+                    
+                    let applyButton = document.createElement('button');
+                    applyButton.innerHTML = 'Apply';
+                    
+                    let dismissButton = document.createElement('button');
+                    dismissButton.innerHTML = 'Dismiss';
+
                     let id = target.period + ":%:" + target.label;
+                    labelInput.value = target.label;
 
                     let popper = event.target.popper({
-                        content: () => {    
-                            div.style.padding = "10px";
-                            tippyButton.id = id;
-                            tippyButton.onclick = this.changeNodeName.bind(this);
+                        content: () => {                                
+                            applyButton.id = id;
+                            applyButton.onclick = this.changeNodeName.bind(this);
+                            
+                            dismissButton.id = id;
+                            dismissButton.onclick = this.dismissPopup.bind(this);
+                            
+                            popupContainer.appendChild(labelInput);
+                            popupContainer.appendChild(applyButton);
+                            popupContainer.appendChild(dismissButton);
 
-                            div.appendChild(tippyInput);
-                            div.appendChild(tippyButton);
-
-                            tippyButton.innerHTML = 'ChangeName';
+                        document.body.appendChild( popupContainer );
                     
-                        document.body.appendChild( div );
-                    
-                        return div;
+                        return popupContainer;
                     },
                         popper: {}
                     });
-
 
                     let update = () => {
                         popper.scheduleUpdate();
@@ -626,7 +701,7 @@ export class PZotGraphEngine {
                     event.target.on('position', update);
                     this.cytoscapeEngine.on('pan zoom resize', update);
 
-                    this.popus.set(id , new Popup(popper, div, tippyInput));
+                    this.popups.set(id , new Popup(popper, popupContainer, labelInput));
                 }
             } catch (error) {
                 console.log("popper error: " + error);
@@ -636,12 +711,21 @@ export class PZotGraphEngine {
 
     private changeNodeName(ev: MouseEvent) {
         let button = ev.target as HTMLButtonElement;
-
-        let popup = this.popus.get(button.id);
+        let popup = this.popups.get(button.id);
 
         if (popup) {
             let info = button.id.split(":%:");            
             this.graph.renameNode(info[0], info[1], popup.getLabel())
+            popup.dismiss();
+            this.renderGraph();
+        }
+    }
+
+    private dismissPopup(ev: MouseEvent) {
+        let button = ev.target as HTMLButtonElement;
+        let popup = this.popups.get(button.id);
+        
+        if (popup) {
             popup.dismiss();
             this.renderGraph();
         }

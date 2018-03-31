@@ -22,7 +22,7 @@ svg {
     user-select: none;
   }
   
-  .cy-context-menus-cxt-menu {
+.cy-context-menus-cxt-menu {
     display:none;
     z-index:1000;
     position:absolute;
@@ -145,4 +145,10 @@ svg {
   text.id {
     text-anchor: middle;
     font-weight: bold;
+  }
+
+  .popup-container{
+    background-color:#f8f8f8;
+    padding: 7px;
+    border-radius: 5px;
   }
