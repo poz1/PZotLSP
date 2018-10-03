@@ -1,0 +1,6 @@
+pzot-electron/lib
+pzot-electron/src-gen
+xtext-pzot-extension/build
+xtext-pzot-extension/lib
+xtext-pzot-language-server/org.pzot.syntax
+xtext-pzot-language-server/org.pzot.syntax.ide

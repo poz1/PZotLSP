@@ -1,8 +1,9 @@
 import { PZotGraphItem, PZotGraphResource } from './pzot-graph-resource';
 import cytoscape = require('cytoscape');
-import edgehandles from 'cytoscape-edgehandles';
 
 import '../../src/browser/style/index.css';
+import './layout.js'
+import { GridContainerLayout, GridCOntainerSetup } from './layout.js';
 
 export class PZotGraph {
     private nodesList = new Array<Node>();
@@ -189,30 +190,52 @@ export class PZotGraphEngine {
     private contextMenu: any;
     private popups = new Map<string, Popup>();
 
+    private canvasHeight = 0;
+    private canvasWidth = 0;
+
     constructor() {
         this.initializeCytoscapePlugins();
     }
 
     /**
-    * Creates the DOM element there the graph will be rendered
-    * @param resource  The resource that is initializating the container.
-    * @returns HTML code of the DOM container.
+    * Loads all the Cytoscape Library plugins needed
     */
     private initializeCytoscapePlugins() {
         let cytoscape = require('cytoscape');
-        let edgehandles = require('cytoscape-edgehandles');
         let jquery = require('jquery');
-        let contextMenus = require('cytoscape-context-menus');
-        let cytoPopper = require('cytoscape-popper');
-        let cytoCanvas = require('cytoscape-canvas');
 
-        cytoscape.use( edgehandles ); // register extension
-        cytoscape.use( cytoPopper ); // register extension
-        contextMenus( cytoscape, jquery ); // register extension
-        cytoCanvas( cytoscape ); // register extension
+        // TODO: Add plugin description and github link
+        let edgehandles = require('cytoscape-edgehandles');
+        cytoscape.use( edgehandles );
+        
+        // TODO: Add plugin description and github link
+        let cytoPopper = require('cytoscape-popper');
+        cytoscape.use( cytoPopper ); 
+        
+        // TODO: Add plugin description and github link
+        let contextMenus = require('cytoscape-context-menus');
+        contextMenus( cytoscape, jquery );
+        
+        // TODO: Add plugin description and github link
+        let cytoCanvas = require('cytoscape-canvas');
+        cytoCanvas( cytoscape ); 
+
+        // The Spread physics simulation layout for Cytoscape.js
+        // https://github.com/cytoscape/cytoscape.js-spread
+        let spread = require('cytoscape-spread');
+        spread( cytoscape ); // register extension
+
+        console.log("zp");
+        //GridCOntainerSetup.register(cytoscape);
+        console.log("layout: " );
+        //gridL(cytoscape);
+
     }
 
-    private initializeDoubleArrowShape() {
+    /**
+    * Double ArrowShape code 
+    */
+    //private initializeDoubleArrowShape() {
         // defineArrowShape( 'double-arrow', {
         //         points: [
         //           -0.15, -0.3,
@@ -243,7 +266,7 @@ export class PZotGraphEngine {
         //           renderer.arrowShapeImpl( this.name )( context, triPts, teePts );
         //         }
         //       } );
-    }
+    //}
 
     /**
     * Creates the DOM element there the graph will be rendered
@@ -462,16 +485,12 @@ export class PZotGraphEngine {
             pixelRatio: "auto",
         });
 
-
         let fontSize = 24;
-    
-
-       
-        //console.log("lowerBound: " + lowerBound);
 
         this.cytoscapeEngine.on("render cyCanvas.resize", (ev: any) => {
             let canvas = layer.getCanvas();
             let ctx = canvas.getContext("2d");
+            let margin = 100;
 
             layer.resetTransform(ctx);
             // layer.clear(ctx);
@@ -481,24 +500,36 @@ export class PZotGraphEngine {
             // Draw a background
             // ctx.drawImage(background, 0, 0);
             // console.log("CHeight: " + canvas.height);
-            // console.log("CWidth: " + canvas.width);
+             console.log("CWidth: " + canvas.width);
 
             // console.log("Height: " + this.cytoscapeEngine.container().offsetHeight);
             // console.log("Width: " + this.cytoscapeEngine.container().offsetWidth);
     
-            ctx.strokeRect(100, 100, canvas.width - 200, canvas.height - 200);
+            this.canvasHeight = canvas.height - (2 * margin);
+            this.canvasWidth = canvas.width - (2 * margin);
+
+            // First two parameters: TopLeft Corner coordinates
+            // Second two parameters: Width and Height of the rectangle
+            ctx.strokeRect(100, 100, this.canvasWidth, this.canvasHeight);
             
             let lowerBound = canvas.height - fontSize;
-            let periodWidth = canvas.width / (this.periods + 1);
+            let periodWidth = (canvas.width - (2 * margin)) / (this.periods);
+
             console.log("CWidth: " + canvas.width);
             console.log("periodWidth: " + periodWidth);
 
             for (let index = 0; index < this.periods; index++) {
-                // Draw text that follows the model
+                // Draw text label for each period
                 ctx.font = fontSize +  "px Helvetica";
                 ctx.fillStyle = "white";
                 ctx.fillText(index, 100 + ((periodWidth * (index + 1)) - ( periodWidth / 2)),  lowerBound);
                 console.log("NEW PERIOD LABEL: " + index + " X: " + ((periodWidth * (index + 1)) - ( periodWidth / 2)) + " Y: " + lowerBound);
+                
+                //Draw separator line for each period
+                ctx.beginPath();
+                ctx.moveTo(periodWidth * (index + 1) + margin, margin);
+                ctx.lineTo(periodWidth * (index + 1) + margin, canvas.height - margin);
+                ctx.stroke();
             }
 
             // Draw shadows under nodes
@@ -540,7 +571,8 @@ export class PZotGraphEngine {
     */
     private populateGraph() {
         this.periods = this.maxPeriod - this.minPeriod + 1;
-            
+        console.log("X. Period count: " + this.periods);
+
         this.normalizePeriods(this.minPeriod);
         this.isNormalizedMode = true;
 
@@ -580,32 +612,26 @@ export class PZotGraphEngine {
 
                 this.cytoscapeEngine.resize();
 
+                console.log("CCCW: " + this.canvasWidth);
+                console.log("CCCH: " + this.canvasHeight);
+
                 let gridOptions = {
                     name: 'grid',
                 
-                    fit: true, // whether to fit the viewport to the graph
+                    fit: false, // whether to fit the viewport to the graph
                     padding: 0, // padding used on fit
-                    boundingBox: { x1: 100, y1: 100, w: this.width - 100, h: this.height - 100 }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+                    boundingBox: { x1: 100, y1: 100, w: this.canvasWidth, h: this.canvasHeight }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
                     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
                     avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
                     nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
-                    spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
                     condense: false, // uses all available space on false, uses minimal space on true
                     rows: undefined, // force num of rows in the grid
                     cols: this.periods, // force num of columns in the grid
                     position: function( node: any ) { return {col: node.data("period"), row: undefined }}, // returns { row, col } for element
-                    sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
-                    animate: false, // whether to transition the node positions
-                    animationDuration: 500, // duration of animation in ms if enabled
-                    animationEasing: undefined, // easing of animation if enabled
-                    animateFilter: function ( node: any, i: any ) { return true; }, // a function that determines whether the node should be animated.  
-                    // All nodes animated by default on animate enabled.  
-                    // Non-animated nodes are positioned immediately when the layout starts
-                    ready: undefined, // callback on layoutready
-                    stop: undefined, // callback on layoutstop
                     // transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
                 };
-                
+
+
                 this.layout = this.cytoscapeEngine.layout(gridOptions);
                 this.layout.run();
                 this.cytoscapeEngine.fit();

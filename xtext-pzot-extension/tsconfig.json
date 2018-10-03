@@ -4,6 +4,7 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "downlevelIteration": true,
+        "noImplicitAny": false,
         "module": "commonjs",
         "moduleResolution": "node",
         "target": "es5",
