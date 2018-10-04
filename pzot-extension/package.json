@@ -1,0 +1,40 @@
+{
+  "name": "pzot-extension",
+  "keywords": [
+    "theia-extension"
+  ],
+  "version": "0.0.0",
+  "files": [
+    "lib",
+    "src"
+  ],
+  "dependencies": {
+    "@theia/core": "latest",
+    "@types/cytoscape": "^3.2.7",
+    "cytoscape": "^3.2.17",
+    "cytoscape-canvas": "^3.0.1",
+    "cytoscape-context-menus": "^3.0.6",
+    "cytoscape-edgehandles": "^3.4.1",
+    "cytoscape-popper": "^1.0.2",
+    "cytoscape-spread": "^3.0.0",
+    "jquery": "^3.3.1",
+    "mousetrap": "^1.6.2"
+  },
+  "devDependencies": {
+    "rimraf": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "prepare": "yarn run copy-ls && yarn run clean && yarn run build",
+    "clean": "rimraf lib",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "copy-ls": "rm -rf ./build && mkdir build && cp ../xtext-pzot-language-server/org.pzot.syntax.ide/build/libs/pzot-language-server.jar ./build"
+  },
+  "theiaExtensions": [
+    {
+      "frontend": "lib/browser/frontend-extension",
+      "backend": "lib/node/backend-extension"
+    }
+  ]
+}

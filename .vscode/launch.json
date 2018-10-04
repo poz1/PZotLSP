@@ -1,7 +1,9 @@
 {
+    // Use IntelliSense to learn about possible Node.js debug attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "type": "node",
             "request": "launch",
@@ -33,7 +35,7 @@
             "windows": {
                 "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron.cmd"
             },
-            "program": "${workspaceRoot}/pzot-electron/src-gen/frontend/electron-main.js",
+            "program": "${workspaceRoot}/electron-app/src-gen/frontend/electron-main.js",
             "protocol": "inspector",
             "args": [
                 "--loglevel=debug",
@@ -45,32 +47,11 @@
             },
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceRoot}/pzot-electron/src-gen/frontend/electron-main.js",
-                "${workspaceRoot}/pzot-electron/src-gen/backend/main.js",
-                "${workspaceRoot}/pzot-electron/lib/**/*.js",
+                "${workspaceRoot}/electron-app/src-gen/frontend/electron-main.js",
+                "${workspaceRoot}/electron-app/src-gen/backend/main.js",
+                "${workspaceRoot}/electron-app/lib/**/*.js",
                 "${workspaceRoot}/node_modules/@theia/*/lib/**/*.js"
             ],
-            "smartStep": true,
-            "internalConsoleOptions": "openOnSessionStart",
-            "outputCapture": "std"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "protocol": "inspector",
-            "name": "Run Mocha Test",
-            "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
-            "args": [
-                "${file}",
-                "--no-timeouts",
-                "--colors",
-                "--opts",
-                "${workspaceRoot}/config/mocha.opts"
-            ],
-            "env": {
-                "TS_NODE_PROJECT": "${workspaceRoot}/tsconfig.json"
-            },
-            "sourceMaps": true,
             "smartStep": true,
             "internalConsoleOptions": "openOnSessionStart",
             "outputCapture": "std"
