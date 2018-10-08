@@ -5,3 +5,6 @@ lib
 *.log
 *-app/*
 !*-app/package.json
+xtext-pzot-language-server/org.pzot.syntax/build
+xtext-pzot-language-server/org.pzot.syntax/src
+xtext-pzot-language-server/org.pzot.syntax/model

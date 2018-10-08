@@ -1,33 +1,37 @@
-# Theia & PZot
+# PzotIDE
 
 A Theia Application with PZot Language Server extension.
 
-Node.JS, >= 8.9.1, < 9.0.0
+## Requirements
+Node.JS, >= 8.9.1, < 9.0.0 (suggested 8.11.3 LTS)
+Lerna  
+Typescript
+Yarn 
 
-## Build and Run
+## Build Instructions
 
 Build the language server
 ```
   cd xtext-pzot-language-server &&
   ./gradlew shadowJar &&
-  cd .. &&
-  yarn install 
+  cd .. 
 ```
 
-Build and start Theia Electron App
+Install dependencies (we use Yarn and Lerna to manage the packages)
 ```
-  yarn install &&
-  yarn rebuild:electron &&
-  cd pzot-electron &&
+  yarn
+```
+
+## Run Electron App
+```
+  cd electron-app &&
   yarn start  &&
   cd ..
 ```
 
-Build and start Theia web App
+## Run Web App
 ```
-  yarn install &&
-  yarn rebuild:browser &&
-  cd pzot-browser &&
+  cd browser-app &&
   yarn start  &&
   cd ..
 ```
