@@ -2,9 +2,6 @@ import { PZotGraphItem, PZotGraphResource } from './pzot-graph-resource';
 import cytoscape = require('cytoscape');
 
 import '../../src/browser/style/index.css';
-import './layout.js'
-import { GridContainerSetup } from './layout.js';
-//import { GridContainerLayout, GridCOntainerSetup } from './layout.js';
 
 export class PZotGraph {
     private nodesList = new Array<Node>();
@@ -614,8 +611,9 @@ export class PZotGraphEngine {
                 
                     fit: false, // whether to fit the viewport to the graph
                     padding: 0, // padding used on fit
-                    boundingBox: { x1: 100, y1: 100, w: this.canvasWidth, h: this.canvasHeight }, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-                    avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+                    //CanvasWidth an canvasHeight have to be divided by 2 as canvas is doble the size of the real container
+                    boundingBox: { x1: 100, y1: 100, w: this.canvasWidth / 2, h: this.canvasHeight / 2}, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+                    avoidOverlap: false, // prevents node overlap, may overflow boundingBox if not enough space
                     avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
                     nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
                     condense: false, // uses all available space on false, uses minimal space on true
