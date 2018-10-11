@@ -93,7 +93,6 @@ function GridContainerLayout(options: GridContainerLayoutOptions) {
 
 
 GridContainerLayout.prototype.run = function () {
-    console.log("0 - starting layout")
     let params = this.options;
     let options = params;
 
@@ -109,7 +108,6 @@ GridContainerLayout.prototype.run = function () {
         x1: 0, y1: 0, w: cy.width(), h: cy.height()
     });
     
-    console.log("1 - BoundingBox: x1 = " + bb.x1 + " x2 = " + bb.x2 + " y1 = " + bb.y1 + " y2 = " + bb.y2 + " w = " + bb.w + " h =" + bb.h);
 
     if (bb.h === 0 || bb.w === 0) {
 
@@ -124,11 +122,6 @@ GridContainerLayout.prototype.run = function () {
         let splits = Math.sqrt(cells * bb.h / bb.w);
         let rows = Math.round(splits);
         let cols = Math.round(bb.w / bb.h * splits);
-
-        console.log("2 - cellsParams: cells = " + cells + 
-                    " splits = " + splits + 
-                    " rows = " + rows + 
-                    " cols = " + cols);
 
         let small = function (val: number) {
             let min = Math.min(rows, cols);
@@ -158,7 +151,6 @@ GridContainerLayout.prototype.run = function () {
 
         let oRows = options.rows;
         let oCols = options.cols != null ? options.cols : options.columns;
-        console.log("3 - oRow = " + oRows + " oCol = " + oCols);
 
         // if rows or columns were set in options, use those values
         if (oRows != null && oCols != null) {
@@ -203,7 +195,6 @@ GridContainerLayout.prototype.run = function () {
 
         let cellWidth = bb.w / cols;
         let cellHeight = bb.h / rows;
-        console.log("4 - cellWidth = " + cellWidth + " cellHeight = " + cellHeight);
 
         if (options.condense) {
             cellWidth = 0;
@@ -231,8 +222,6 @@ GridContainerLayout.prototype.run = function () {
             }
         }
         
-        console.log("4 - cellWidth = " + cellWidth + " cellHeight = " + cellHeight);
-
         let cellUsed: { [key: string]: any; } = {} // e.g. 'c-0-2' => true
 
         let used = function (row: number, col: number) {
@@ -311,17 +300,11 @@ GridContainerLayout.prototype.run = function () {
                 moveToNextCell();
             }
 
-            console.log("5 - settingg node: " + element.id() + " x = " + x + " y = " + y);
-
             return { x: x, y: y };
 
         };
 
         nodes.layoutPositions(this, options, getPos);
-        nodes.forEach(function(elen:any){
-            console.log("deb: node: " + elen.data());
-            console.log("deb: node: " + elen.id() + " x: " + elen.x + " y: " + elen.y);
-        });
     }
 
     return this; // chaining

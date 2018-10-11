@@ -181,6 +181,8 @@ export class PZotGraphEngine {
     private minPeriod = 0;
     private isNormalizedMode = false;
 
+    private maxNodesInPeriod = 0;
+
     private cytoscapeEngine: any;
     private layout: any;
     private mousetrap: any;
@@ -491,7 +493,7 @@ export class PZotGraphEngine {
             // Draw a background
             // ctx.drawImage(background, 0, 0);
             // console.log("CHeight: " + canvas.height);
-             console.log("CWidth: " + canvas.width);
+            // console.log("CWidth: " + canvas.width);
 
             // console.log("Height: " + this.cytoscapeEngine.container().offsetHeight);
             // console.log("Width: " + this.cytoscapeEngine.container().offsetWidth);
@@ -506,15 +508,15 @@ export class PZotGraphEngine {
             let lowerBound = canvas.height - fontSize;
             let periodWidth = (canvas.width - (2 * margin)) / (this.periods);
 
-            console.log("CWidth: " + canvas.width);
-            console.log("periodWidth: " + periodWidth);
+            // console.log("CWidth: " + canvas.width);
+            // console.log("periodWidth: " + periodWidth);
 
             for (let index = 0; index < this.periods; index++) {
                 // Draw text label for each period
                 ctx.font = fontSize +  "px Helvetica";
                 ctx.fillStyle = "white";
                 ctx.fillText(index, 100 + ((periodWidth * (index + 1)) - ( periodWidth / 2)),  lowerBound);
-                console.log("NEW PERIOD LABEL: " + index + " X: " + ((periodWidth * (index + 1)) - ( periodWidth / 2)) + " Y: " + lowerBound);
+                //console.log("NEW PERIOD LABEL: " + index + " X: " + ((periodWidth * (index + 1)) - ( periodWidth / 2)) + " Y: " + lowerBound);
                 
                 //Draw separator line for each period
                 ctx.beginPath();
@@ -562,7 +564,9 @@ export class PZotGraphEngine {
     */
     private populateGraph() {
         this.periods = this.maxPeriod - this.minPeriod + 1;
+        this.maxNodesInPeriod = this.getMaxNodesInPeriods();
         console.log("X. Period count: " + this.periods);
+        console.log("X. MaxNodesInPeriods count: " + this.maxNodesInPeriod);
 
         this.normalizePeriods(this.minPeriod);
         this.isNormalizedMode = true;
@@ -603,9 +607,6 @@ export class PZotGraphEngine {
 
                 this.cytoscapeEngine.resize();
 
-                console.log("CCCW: " + this.canvasWidth);
-                console.log("CCCH: " + this.canvasHeight);
-
                 let gridOptions = {
                     name: 'grid-container',
                 
@@ -617,7 +618,7 @@ export class PZotGraphEngine {
                     avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
                     nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
                     condense: false, // uses all available space on false, uses minimal space on true
-                    rows: undefined, // force num of rows in the grid
+                    rows: this.maxNodesInPeriod, // force num of rows in the grid
                     cols: this.periods, // force num of columns in the grid
                     position: function( node: any ) { return {col: node.data("period"), row: undefined }}, // returns { row, col } for element
                     // transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
@@ -872,5 +873,18 @@ export class PZotGraphEngine {
     private clearGraph() {
         this.cytoscapeEngine.elements().remove();
         console.log("3.1 Graph clear")
+    }
+
+    
+    private getMaxNodesInPeriods(){
+        let max = 0;
+        for(let i = 0; i < this.periods; i++){
+            let nodesInPeriod = this.graph.nodes.get(i.toString());
+            if(nodesInPeriod != undefined){
+                max = Math.max(nodesInPeriod.size, max);
+            }
+        }
+
+        return max;
     }
 }
