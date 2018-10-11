@@ -3,6 +3,7 @@ import cytoscape = require('cytoscape');
 
 import '../../src/browser/style/index.css';
 import './layout.js'
+import { GridContainerSetup } from './layout.js';
 //import { GridContainerLayout, GridCOntainerSetup } from './layout.js';
 
 export class PZotGraph {
@@ -220,16 +221,9 @@ export class PZotGraphEngine {
         let cytoCanvas = require('cytoscape-canvas');
         cytoCanvas( cytoscape ); 
 
-        // The Spread physics simulation layout for Cytoscape.js
-        // https://github.com/cytoscape/cytoscape.js-spread
-        let spread = require('cytoscape-spread');
-        spread( cytoscape ); // register extension
-
-        console.log("zp");
-        //GridCOntainerSetup.register(cytoscape);
-        console.log("layout: " );
-        //gridL(cytoscape);
-
+        // The GridContainer layout for Cytoscape.js
+        let gridContainer = require('./grid-layout/register');
+        gridContainer(cytoscape);
     }
 
     /**
@@ -616,7 +610,7 @@ export class PZotGraphEngine {
                 console.log("CCCH: " + this.canvasHeight);
 
                 let gridOptions = {
-                    name: 'grid',
+                    name: 'grid-container',
                 
                     fit: false, // whether to fit the viewport to the graph
                     padding: 0, // padding used on fit
