@@ -133,13 +133,18 @@ export class PZotGraphResource implements Resource {
         let dependecies = "";
         let mainNodes = new Array<PZotGraphItem>();
 
+        graph.nodes.forEach(nodeContainer => {
+            nodeContainer.forEach(node => {
+                console.log("node " + node.label + " is present at period: " + node.period);
+                let nod = this.nodeToPZotGraphItem(node);
+                mainNodes.push(nod);
+            });
+        });
+
         graph.edges.forEach(edge => {
-            let mainNode = mainNodes.find((x) => x.id === edge.source.id);
-            if ( mainNode == undefined) {
-                let node = this.nodeToPZotGraphItem(edge.source);
-                node.addChildren(this.nodeToPZotGraphItem(edge.target));
-                mainNodes.push(node);
-            } else {
+            let mainNode = mainNodes.find((x) => x.id == edge.source.id);
+            if ( mainNode != undefined) {
+                console.log("Adding " + edge.target.label + " to node " + mainNode.label);
                 mainNode.addChildren(this.nodeToPZotGraphItem(edge.target));
             }
         });

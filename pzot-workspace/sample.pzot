@@ -1,2 +1,2 @@
-DEPENDENCIES: (&& (dep (next (next (-p- ba)))(next (-p- b))(-p- b2)(next (next (next (-p- b4))))(next (-p- b5))(-p- e))(dep (next (-p- f))(next (next (-p- d))))(dep (-p- e)(next (next (-p- d)))))
-FORMULA: (&& (= (zot-p (-p- a)) 0.5)(= (zot-p (-p- b)) 0.6)
+DEPENDENCIES: (&& (dep (-p- a)(next (-p- b))) (dep(next (-p- b))(next(next(-p- c)))))
+FORMULA: (&& (= (zot-p (-p- a)) 0.5)(= (zot-p (-p- b)) 0.6))

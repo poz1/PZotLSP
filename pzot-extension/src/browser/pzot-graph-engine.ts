@@ -51,6 +51,21 @@ export class PZotGraph {
         }
     }
 
+    /**
+     * updateNodePeriod
+     */
+    public updateNodePeriod(label: string, period: string, newPeriod: number) {
+        let nodesByPeriod = this.nodes.get(period);
+        if (nodesByPeriod) {
+            let node = nodesByPeriod.get(label);
+            
+            if (node) {
+                node.period = newPeriod;
+                this.isDirty = true;
+            }
+        }
+    }
+
     public getEdge(source?: Node, target?: Node): Edge | Array<Edge> {        
         if (source && target) {
             this.edges.forEach(edge => {
@@ -507,7 +522,7 @@ export class PZotGraphEngine {
             
             let lowerBound = canvas.height - fontSize;
             let periodWidth = (this.canvasWidth) / (this.periods);
-            console.log("REAL Period SIZE: " + periodWidth);
+            //console.log("REAL Period SIZE: " + periodWidth);
 
             // console.log("CWidth: " + canvas.width);
             // console.log("periodWidth: " + periodWidth);
@@ -794,16 +809,21 @@ export class PZotGraphEngine {
 
     private onChangingPeriod(event: cytoscape.EventObject) {
         let node = event.target;
-        
+        let nodeLabel = node.data().label;
+        let nodePeriod = node.data().period;
+
         //We divide by two because canvas is double in size
         let periodSize = (this.canvasWidth/ this.periods) / 2; 
         let newPeriod = Math.floor((node.position().x - this.margin) / periodSize);
-        this.graph.getNodesList()[node.id()].period = newPeriod;
+        
+        console.log("node " + nodeLabel + " changed period from: " +
+                           nodePeriod + " to: " + newPeriod);
+        
+        this.graph.updateNodePeriod(nodeLabel, nodePeriod, newPeriod);
 
         if (!this.isNormalizedMode) { 
             this.graph.getNodesList()[node.id()].period += this.minPeriod;
         }
-
         // TODO: bottoncino
         // this.updateDependecies();
     }
