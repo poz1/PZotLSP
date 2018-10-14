@@ -180,6 +180,7 @@ export class PZotGraphEngine {
     private maxPeriod = 0;
     private minPeriod = 0;
     private isNormalizedMode = false;
+    private margin = 100;
 
     private maxNodesInPeriod = 0;
 
@@ -483,7 +484,6 @@ export class PZotGraphEngine {
         this.cytoscapeEngine.on("render cyCanvas.resize", (ev: any) => {
             let canvas = layer.getCanvas();
             let ctx = canvas.getContext("2d");
-            let margin = 100;
 
             layer.resetTransform(ctx);
             // layer.clear(ctx);
@@ -492,21 +492,22 @@ export class PZotGraphEngine {
             // ctx.save();
             // Draw a background
             // ctx.drawImage(background, 0, 0);
-            // console.log("CHeight: " + canvas.height);
-            // console.log("CWidth: " + canvas.width);
+            //  console.log("CHeight: " + canvas.height);
+            //  console.log("CWidth: " + canvas.width);
 
             // console.log("Height: " + this.cytoscapeEngine.container().offsetHeight);
             // console.log("Width: " + this.cytoscapeEngine.container().offsetWidth);
     
-            this.canvasHeight = canvas.height - (2 * margin);
-            this.canvasWidth = canvas.width - (2 * margin);
+            this.canvasHeight = canvas.height - (2 * this.margin);
+            this.canvasWidth = canvas.width - (2 * this.margin);
 
             // First two parameters: TopLeft Corner coordinates
             // Second two parameters: Width and Height of the rectangle
             ctx.strokeRect(100, 100, this.canvasWidth, this.canvasHeight);
             
             let lowerBound = canvas.height - fontSize;
-            let periodWidth = (canvas.width - (2 * margin)) / (this.periods);
+            let periodWidth = (this.canvasWidth) / (this.periods);
+            console.log("REAL Period SIZE: " + periodWidth);
 
             // console.log("CWidth: " + canvas.width);
             // console.log("periodWidth: " + periodWidth);
@@ -515,13 +516,13 @@ export class PZotGraphEngine {
                 // Draw text label for each period
                 ctx.font = fontSize +  "px Helvetica";
                 ctx.fillStyle = "white";
-                ctx.fillText(index, 100 + ((periodWidth * (index + 1)) - ( periodWidth / 2)),  lowerBound);
+                ctx.fillText(index, this.margin + ((periodWidth * (index + 1)) - ( periodWidth / 2)),  lowerBound);
                 //console.log("NEW PERIOD LABEL: " + index + " X: " + ((periodWidth * (index + 1)) - ( periodWidth / 2)) + " Y: " + lowerBound);
                 
                 //Draw separator line for each period
                 ctx.beginPath();
-                ctx.moveTo(periodWidth * (index + 1) + margin, margin);
-                ctx.lineTo(periodWidth * (index + 1) + margin, canvas.height - margin);
+                ctx.moveTo(periodWidth * (index + 1) + this.margin, this.margin);
+                ctx.lineTo(periodWidth * (index + 1) + this.margin, canvas.height - this.margin);
                 ctx.stroke();
             }
 
@@ -643,7 +644,7 @@ export class PZotGraphEngine {
     private addData(data: Array<PZotGraphItem>) {
         data.forEach(element => {
             this.addNode(new Node(element));
-
+            
             element.getChildren().forEach(child => {
                 this.addNode(new Node(child));
                 
@@ -772,16 +773,18 @@ export class PZotGraphEngine {
 
         this.renderGraph();
     }
+    
 
     /**
      * createNewNode
      */
     private addGraphNode(event: cytoscape.EventObject) {
             let node = new PZotGraphItem("undefined");
-
+            //console.log("addW: " + this.width + " H: " + this.height);
             let periodSize = (this.width / this.periods); 
-            let newPeriod = Math.round(event.position.x / periodSize);
+            let newPeriod = Math.floor((event.position.x) / periodSize);
 
+            //console.log("click in : " + event.position.x );
             node.period = newPeriod;
             console.log(newPeriod);
 
@@ -791,9 +794,10 @@ export class PZotGraphEngine {
 
     private onChangingPeriod(event: cytoscape.EventObject) {
         let node = event.target;
-        let periodSize = (this.width / this.periods); 
-        let newPeriod = Math.round(node.position().x / periodSize);
-
+        
+        //We divide by two because canvas is double in size
+        let periodSize = (this.canvasWidth/ this.periods) / 2; 
+        let newPeriod = Math.floor((node.position().x - this.margin) / periodSize);
         this.graph.getNodesList()[node.id()].period = newPeriod;
 
         if (!this.isNormalizedMode) { 
