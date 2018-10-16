@@ -3,18 +3,19 @@ import { PZotNode } from "./pzot-node";
 import { Logger } from "../../debug";
 
 export class PZotGraph {
+    
     public periods: number;
     public maxNodesInPeriod = 0;
-    
+    public nodeCount = 0;
+
     private nodesList = new Array<PZotNode>();
 
     //Nodes are indexed by period and label. Map<period, Map<label, node>>
     private nodes = new Map<string, Map<string, PZotNode>>();
     private edges = new Array<PZotEdge>();
     private isDirty = true;
-    private periodUpperBound = 0;
-    private periodLowerBound = 0;
-    private nodeCount = 0;
+    public periodUpperBound = 0;
+    public periodLowerBound = 0;
 
     public constructor(dependencyFormula: string) {
         Logger.log("0: Creating Graph from: " + dependencyFormula);
@@ -227,7 +228,7 @@ export class PZotGraph {
     }
 
     public addEdge(edge: PZotEdge) {
-        Logger.log("Graph - Adding arc from: " + edge.source.label + " to: " + edge.target.label + " graph.");
+        Logger.log("Graph - Adding arc from: " + edge.source.label + " to: " + edge.target.label );
         return this.edges.push(edge);
     }
 

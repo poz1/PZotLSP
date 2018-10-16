@@ -39,12 +39,15 @@ export class PZotDependencyGraphWidget extends BaseWidget {
         
         //this.resource.clearGraph();
         let dep = this.resource.parseDocument();
-        this.resource.renderGraph(new PZotGraph(dep));
+        this.resource.setGraph(new PZotGraph(dep));
+        this.resource.renderGraph();
+        //We need to run this twice to get the node properly rendered, must be investigated
+        this.resource.renderGraph();
     }
 
     onResize(msg: Widget.ResizeMessage) {
         Logger.log("Widegt Resize");
         super.onResize(msg);
-        this.resource.layoutGraph();
+        this.resource.renderGraph();
     }
 }

@@ -61,13 +61,14 @@ export class PZotGraphResource implements Resource {
         }
     }
 
-    public renderGraph(graph:PZotGraph) {
-        Logger.log("Render Request");
-        this.engine.renderGraph(graph);
+    public setGraph(graph:PZotGraph) {
+        Logger.log("Changing Graph");
+        this.engine.setGraph(graph);
     }
 
-    public layoutGraph() {
-        this.engine.layoutGraph();
+    public renderGraph() {
+        Logger.log("Render Request");
+        this.engine.renderGraph();
     }
 
     /**

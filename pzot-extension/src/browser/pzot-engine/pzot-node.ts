@@ -15,8 +15,9 @@ export class PZotNode {
     * Creates a new node instance starting from a PZot formula of a litteral
     * @param formula  The PZot formula of a litteral ( Eg. (next(-p- sample)) )
     */
-    constructor(formula:string) {
-        this.parsePZotItem(formula);
+    constructor(formula?:string) {
+        if(formula)
+            this.parsePZotItem(formula);
     }
 
     /**
