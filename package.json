@@ -3,7 +3,8 @@
   "scripts": {
     "prepare": "lerna run prepare",
     "rebuild:browser": "theia rebuild:browser",
-    "rebuild:electron": "theia rebuild:electron"
+    "rebuild:electron": "theia rebuild:electron",
+    "doc": "typedoc  --options typedoc.json ./pzot-extension/src "
   },
   "devDependencies": {
     "lerna": "3.4.0"

@@ -1,5 +1,4 @@
 import { ShapedLayoutOptions, BoundingBoxWH } from "cytoscape";
-import { func } from "prop-types";
 
 const extend = Object.assign != null ? Object.assign.bind(Object) : function (tgt: any) {
     let args = arguments;

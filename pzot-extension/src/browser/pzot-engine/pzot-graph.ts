@@ -262,23 +262,6 @@ export class PZotGraph {
         let dependecies = "";
         let mainNodes = this.getNodesList();
 
-        // this.nodes.forEach(nodeContainer => {
-        //     nodeContainer.forEach(node => {
-        //         Logger.log("node " + node.label + " is present at period: " + node.period);
-        //         let nod = node.toPZotGraphItem(); 
-        //         mainNodes.push(nod);
-        //     });
-        // });
-
-        // this.edges.forEach(edge => {
-        //     let mainNode = mainNodes.find((x) => x.id == edge.source.id);
-        //     if ( mainNode != undefined) {
-        //         Logger.log("Adding " + edge.target.label + " to node " + mainNode.label);
-        //         mainNode.addDependency(edge.target.toPZotGraphItem());
-        //     }
-        // });
-
-        if (mainNodes.length > 0) {
             if (mainNodes.length > 1) {
                 dependecies = "(&& ";
 
@@ -287,13 +270,12 @@ export class PZotGraph {
                 });
 
                 dependecies = dependecies + ")";
-            } else {
+            } else if (mainNodes.length = 1){
                 dependecies = mainNodes[0].toDependendency();
             }
 
             //this.updatingDeps = true;
             //this.updateDependencies(dependecies);
-        }
 
         return dependecies;
     }

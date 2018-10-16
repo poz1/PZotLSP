@@ -35,3 +35,10 @@ Install dependencies (we use Yarn and Lerna to manage the packages)
   yarn start  &&
   cd ..
 ```
+
+## Build Documentation
+```
+  yarn doc
+```
+
+Documentation is now available in pzot-extension/doc
