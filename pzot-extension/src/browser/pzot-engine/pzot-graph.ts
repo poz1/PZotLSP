@@ -1,6 +1,7 @@
 import { PZotEdge } from "./pzot-edge";
 import { PZotNode } from "./pzot-node";
 import { Logger } from "../../debug";
+import { logger } from "@theia/core";
 
 export class PZotGraph {
     
@@ -115,13 +116,8 @@ export class PZotGraph {
     }
 
     private updateGraphBounds(node: PZotNode) {
-        if (node.periodUpperBound > this.periodUpperBound) {
-            this.periodUpperBound = node.periodUpperBound;
-        }
-
-        if (node.periodLowerBound < this.periodLowerBound) {
-            this.periodLowerBound = node.periodLowerBound;
-        }
+        this.periodUpperBound = Math.max(node.period, this.periodUpperBound);
+        this.periodLowerBound = Math.min(node.period, this.periodLowerBound);
 
         this.periods = Math.abs(this.periodUpperBound) + Math.abs(this.periodLowerBound);
         //We add the "0" period to the count if it's in the interval

@@ -641,20 +641,14 @@ export class PZotGraphLayout {
         //Temp label, user will probably change it. (Or not, we don't care)
         node.label = "New Node " + (this.graph.nodeCount + 1);
 
-        //We need to rerender also the backgorund grid as we are adding a new period
-        // if (node.period > this.graph.periodUpperBound){
-            
-        //     this.renderBackgroundGrid();
-        // }
-
         //Add the new node to the graph data structure
         this.graph.addNode(node);
+
         //Add the new node to the layout 
         //(we do not want to rebuild all the layout for just one node)
         this.addCytoscapeNode(node);
 
         this.renderGraph();
-
 
         Logger.log("Updating graph with new node: " + node.toString());
     }
