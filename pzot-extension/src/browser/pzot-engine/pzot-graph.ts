@@ -4,7 +4,8 @@ import { Logger } from "../../debug";
 
 export class PZotGraph {
     public periods: number;
-
+    public maxNodesInPeriod = 0;
+    
     private nodesList = new Array<PZotNode>();
 
     //Nodes are indexed by period and label. Map<period, Map<label, node>>
@@ -107,7 +108,8 @@ export class PZotGraph {
             }
         }
 
-        //never reached 
+        //never reached (in theory xD)
+        Logger.log("Huston we have a problem! - addNode in pzot-graph");
         return node;
     }
 
@@ -124,6 +126,10 @@ export class PZotGraph {
         //We add the "0" period to the count if it's in the interval
         if (this.periodUpperBound >= 0 && this.periodLowerBound <= 0)
             this.periods++;
+
+        let nodesInPeriod = this.nodes.get(node.period.toString());
+        if(nodesInPeriod)
+            this.maxNodesInPeriod = Math.max(this.maxNodesInPeriod, nodesInPeriod.size);
     }
 
     public getNodesList(): Array<PZotNode> {
@@ -163,24 +169,24 @@ export class PZotGraph {
     public updateNodePeriod(label: string, period: string, newPeriod: number) {
         this.forceUpdate();
 
-        console.log("updating node " + label + " from " + period + " to " + newPeriod);
+        Logger.log("updating node " + label + " from " + period + " to " + newPeriod);
         let nodesByPeriod = this.nodes.get(period);
-        console.log("PCZZ");
+        Logger.log("PCZZ");
 
-        console.log(this.nodes);
-        console.log(nodesByPeriod);
+        Logger.log(this.nodes);
+        Logger.log(nodesByPeriod);
         if (nodesByPeriod) {
-            console.log("NP0");
+            Logger.log("NP0");
 
             let node = nodesByPeriod.get(label);
-            console.log(node);
+            Logger.log(node);
 
             if (node) {
-                console.log("NP1");
+                Logger.log("NP1");
 
-                console.log("p1 : " + node.period);
+                Logger.log("p1 : " + node.period);
                 node.period = newPeriod;
-                console.log("p2 : " + node.period);
+                Logger.log("p2 : " + node.period);
                 this.isDirty = true;
             }
         }
@@ -258,7 +264,7 @@ export class PZotGraph {
 
         // this.nodes.forEach(nodeContainer => {
         //     nodeContainer.forEach(node => {
-        //         console.log("node " + node.label + " is present at period: " + node.period);
+        //         Logger.log("node " + node.label + " is present at period: " + node.period);
         //         let nod = node.toPZotGraphItem(); 
         //         mainNodes.push(nod);
         //     });
@@ -267,7 +273,7 @@ export class PZotGraph {
         // this.edges.forEach(edge => {
         //     let mainNode = mainNodes.find((x) => x.id == edge.source.id);
         //     if ( mainNode != undefined) {
-        //         console.log("Adding " + edge.target.label + " to node " + mainNode.label);
+        //         Logger.log("Adding " + edge.target.label + " to node " + mainNode.label);
         //         mainNode.addDependency(edge.target.toPZotGraphItem());
         //     }
         // });
