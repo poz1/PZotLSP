@@ -1,159 +1,12 @@
-import { PZotGraphItem, PZotGraphResource } from './pzot-graph-resource';
+import { PZotGraphResource } from './pzot-graph-resource';
 import cytoscape = require('cytoscape');
 
 import '../../src/browser/style/index.css';
-
-export class PZotGraph {
-    private nodesList = new Array<Node>();
-
-    nodes = new Map<string, Map<string, Node>>();
-    edges = new Array<Edge>();
-    isDirty = true;
-
-    public getNodesList(): Array<Node> {
-        let result = new Array<Node>();
-
-        if (this.isDirty) {
-            this.nodes.forEach(period => {
-                period.forEach(node => {
-                    result.push(node);
-                });
-            });
-    
-            this.nodesList = result;
-            this.isDirty = false;
-        } else {
-            result = this.nodesList;
-        }
-
-        return result;
-    }
-
-    public getNode(period: string, label: string): Node | undefined {
-        let nodesByPeriod = this.nodes.get(period);
-        if (nodesByPeriod) {
-            return nodesByPeriod.get(label);
-        }
-    }
-
-    /**
-     * renameNode
-     */
-    public renameNode(period: string, label: string, newLabel: string) {
-        let nodesByPeriod = this.nodes.get(period);
-        if (nodesByPeriod) {
-            let node = nodesByPeriod.get(label);
-            
-            if (node) {
-                node.label = newLabel;
-                this.isDirty = true;
-            }
-        }
-    }
-
-    /**
-     * updateNodePeriod
-     */
-    public updateNodePeriod(label: string, period: string, newPeriod: number) {
-        let nodesByPeriod = this.nodes.get(period);
-        if (nodesByPeriod) {
-            let node = nodesByPeriod.get(label);
-            
-            if (node) {
-                node.period = newPeriod;
-                this.isDirty = true;
-            }
-        }
-    }
-
-    public getEdge(source?: Node, target?: Node): Edge | Array<Edge> {        
-        if (source && target) {
-            this.edges.forEach(edge => {
-                if (edge.source == source && edge.target == target) {
-                    return edge;
-                }
-            });
-        }
-
-        let result = new Array<Edge>();
-
-        if (source) {
-            this.edges.forEach(edge => {
-                if (edge.source == source) {
-                    result.push(edge);
-                }
-            });
-        }
-
-        if (target) {
-            this.edges.forEach(edge => {
-                if (edge.target == target) {
-                    result.push(edge);
-                }
-            });
-        }
-
-        return result;
-    }
-
-    public removeNode(period: string, label: string): void {
-        let nodesByPeriod = this.nodes.get(period);
-        if (nodesByPeriod) {
-            nodesByPeriod.delete(label);
-            this.isDirty = true;
-        }
-    }
-
-    public removeEdge(source: Node, target: Node): void {
-        let edge;
-        this.edges.forEach(item => {
-            if (item.source == source && item.target == target) {
-                edge = item;
-            }
-        });
-        
-        if (edge) {
-            this.edges.splice(this.edges.indexOf(edge), 1);
-        }
-    }
-
-    public clear() {
-        this.nodes = new Map<string, Map<string, Node>>();
-        this.edges = new Array<Edge>();
-        this.isDirty = true;
-    }
-}
-
-export class Node {
-    label: string = "";
-    id: string = "";
-    period: number;
-    isParent: boolean;
-
-    constructor(input: PZotGraphItem) {
-        this.label = input.label;
-        this.period = input.period;
-        this.isParent = input.isParent;
-    }
-
-    public normalizePeriod(offset: number) {
-        this.period += offset;
-    }
-
-    public toString() {
-        console.log("Node: " + this.label + " ID: " + this.id + " Period: " + this.period + " isParent: " + this.isParent);
-    }
-}
-
-export class Edge {
-    source: Node;
-    target: Node;
-
-    constructor(source: Node, target: Node) {
-        this.source = source;
-        this.target = target;
-    }
-}
+import { PZotGraph } from './pzot-engine/pzot-graph';
+import { PZotNode } from './pzot-engine/pzot-node';
+import { PZotEdge } from './pzot-engine/pzot-edge';
+import { Logger } from '../debug';
+import { logger } from '@theia/core';
 
 class Popup {
     private popper: any;
@@ -186,8 +39,8 @@ class Popup {
 export class PZotGraphEngine {
 
     private resource: PZotGraphResource | undefined;
-    private graph = new PZotGraph();
-    private periods = 1;
+    private graph: PZotGraph;
+    //private periods = 1;
     private width = 0;
     private height = 0;
 
@@ -213,6 +66,12 @@ export class PZotGraphEngine {
         this.initializeCytoscapePlugins();
     }
 
+    /**
+    * setGraph
+    */
+    public setGraph(graph:PZotGraph) {
+        this.graph = graph;
+    }
     /**
     * Loads all the Cytoscape Library plugins needed
     */
@@ -521,13 +380,13 @@ export class PZotGraphEngine {
             ctx.strokeRect(100, 100, this.canvasWidth, this.canvasHeight);
             
             let lowerBound = canvas.height - fontSize;
-            let periodWidth = (this.canvasWidth) / (this.periods);
+            let periodWidth = (this.canvasWidth) / (this.graph.periods);
             //console.log("REAL Period SIZE: " + periodWidth);
 
             // console.log("CWidth: " + canvas.width);
             // console.log("periodWidth: " + periodWidth);
 
-            for (let index = 0; index < this.periods; index++) {
+            for (let index = 0; index < this.graph.periods; index++) {
                 // Draw text label for each period
                 ctx.font = fontSize +  "px Helvetica";
                 ctx.fillStyle = "white";
@@ -558,18 +417,23 @@ export class PZotGraphEngine {
     /**
     * Creates the DOM element there the graph will be rendered
     */
-    public renderGraph(data?: Array<PZotGraphItem>) {
+    public renderGraph(graph?: PZotGraph) {        
         if (!this.cytoscapeEngine) {
             this.initializeGraphEngine();
         }
 
-        if (data) {
+        if (graph) {
+            Logger.log("Setting Graph!");
+            //Temporary
+            this.setGraph(graph);
             this.clear();
-            this.addData(data);
-        }
+            //???
+            //this.addData(graph);
+        
 
         this.clearGraph();
-        this.populateGraph();
+        this.populateGraph(graph);
+        }
         this.layoutGraph();
     }
 
@@ -578,25 +442,31 @@ export class PZotGraphEngine {
     * @param resource  The resource that is initializating the container.
     * @returns HTML code of the DOM container.
     */
-    private populateGraph() {
-        this.periods = this.maxPeriod - this.minPeriod + 1;
+    private populateGraph(graph:PZotGraph) {
+        //this.periods = this.maxPeriod - this.minPeriod + 1;
         this.maxNodesInPeriod = this.getMaxNodesInPeriods();
-        console.log("X. Period count: " + this.periods);
+        console.log("X. Period count: " + this.graph.periods);
         console.log("X. MaxNodesInPeriods count: " + this.maxNodesInPeriod);
 
         this.normalizePeriods(this.minPeriod);
         this.isNormalizedMode = true;
 
         try {
-            this.graph.getNodesList().forEach(node => {                        
+            let nodeList = graph.getNodesList();
+            
+            for (let index = 0; index < nodeList.length; index++) {
                 this.cytoscapeEngine.add({ 
-                    data: {id : node.id, label: node.label, period: node.period, isParent: node.isParent }, selectable: false
-                });
-            });
+                    data: {id : nodeList[index].id, label: nodeList[index].label, 
+                        period: nodeList[index].period, isParent: nodeList[index].isParent }, selectable: false
+                }); 
+                Logger.log("Layout - Added node: " + nodeList[index].label + " with ID: " + nodeList[index].id + " in period: " + nodeList[index].period);
+            }
 
-            this.graph.edges.forEach(element => {
-                this.cytoscapeEngine.add( { data: { source: element.source.id, target: element.target.id}, selectable: false});
-            });
+            let edgeList = graph.getEdges();
+            for (let index = 0; index < edgeList.length; index++) {
+                this.cytoscapeEngine.add( { data: { source: edgeList[index].source.id, target: edgeList[index].target.id}, selectable: false});
+                Logger.log("Layout - Added edge from: " + edgeList[index].source.id + " to: " + edgeList[index].target.id);
+            }
 
             this.cytoscapeEngine.on('drag', 'node', this.onChangingPeriod.bind(this));
             // this.cy.on('click', 'node',  this.editNodeLabel.bind(this));
@@ -635,7 +505,7 @@ export class PZotGraphEngine {
                     nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
                     condense: false, // uses all available space on false, uses minimal space on true
                     rows: this.maxNodesInPeriod, // force num of rows in the grid
-                    cols: this.periods, // force num of columns in the grid
+                    cols: this.graph.periods, // force num of columns in the grid
                     position: function( node: any ) { return {col: node.data("period"), row: undefined }}, // returns { row, col } for element
                     // transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
                 };
@@ -656,22 +526,37 @@ export class PZotGraphEngine {
     * @param resource  The resource that is initializating the container.
     * @returns HTML code of the DOM container.
     */
-    private addData(data: Array<PZotGraphItem>) {
-        data.forEach(element => {
-            this.addNode(new Node(element));
+    private addData(graph: PZotGraph) {
+        // data.forEach(element => {
+        //     this.addNode(new PZotNode(element));
             
-            element.getChildren().forEach(child => {
-                this.addNode(new Node(child));
+        //     element.getDependencies().forEach(child => {
+        //         this.addNode(new PZotNode(child));
                 
 
-                let parent = this.graph.getNode(element.period.toString(), element.label);
-                let childNode = this.graph.getNode(child.period.toString(), child.label);
+        //         let parent = this.graph.getNode(element.period.toString(), element.label);
+        //         let childNode = this.graph.getNode(child.period.toString(), child.label);
            
-                if (parent && childNode) {
-                    this.addEdge(new Edge(parent, childNode));
-                }
-            });
-        }); 
+        //         if (parent && childNode) {
+        //             this.addEdge(new PZotEdge(parent, childNode));
+        //         }
+        //     });
+        // }); 
+
+
+        let nodeList = this.graph.getNodesList();
+        console.log(nodeList);
+            for (let index = 0; index < nodeList.length; index++) {
+                this.cytoscapeEngine.add({ 
+                    data: {id : nodeList[index].id, label: nodeList[index].label, 
+                        period: nodeList[index].period, isParent: nodeList[index].isParent }, selectable: false
+                }); 
+            }
+
+            let edgeList = this.graph.getEdges();
+            for (let index = 0; index < nodeList.length; index++) {
+                this.cytoscapeEngine.add( { data: { source: edgeList[index].source.id, target: edgeList[index].target.id}, selectable: false});
+            }
         console.log("4. Graph Data Ready")  
     }
 
@@ -681,10 +566,11 @@ export class PZotGraphEngine {
     * @returns HTML code of the DOM container.
     */
     private normalizePeriods(offset: number) {
-        this.graph.getNodesList().forEach(node => {
-            node.normalizePeriod( - offset);
-        });
-    }
+        let nodeList = this.graph.getNodesList();
+            for (let index = 0; index < nodeList.length; index++) {
+                    nodeList[index].normalizePeriod( - offset);
+            }
+        }
 
     /**
      * renameGraphNode
@@ -794,16 +680,16 @@ export class PZotGraphEngine {
      * createNewNode
      */
     private addGraphNode(event: cytoscape.EventObject) {
-            let node = new PZotGraphItem("undefined");
+            let node = new PZotNode("undefined");
             //console.log("addW: " + this.width + " H: " + this.height);
-            let periodSize = (this.width / this.periods); 
+            let periodSize = (this.width / this.graph.periods); 
             let newPeriod = Math.floor((event.position.x) / periodSize);
 
             //console.log("click in : " + event.position.x );
             node.period = newPeriod;
             console.log(newPeriod);
 
-            this.addNode(new Node(node));
+            this.addNode(node);
             this.renderGraph();
     }
 
@@ -813,7 +699,7 @@ export class PZotGraphEngine {
         let nodePeriod = node.data().period;
 
         //We divide by two because canvas is double in size
-        let periodSize = (this.canvasWidth/ this.periods) / 2; 
+        let periodSize = (this.canvasWidth/ this.graph.periods) / 2; 
         let newPeriod = Math.floor((node.position().x - this.margin) / periodSize);
         
         console.log("node " + nodeLabel + " changed period from: " +
@@ -834,7 +720,7 @@ export class PZotGraphEngine {
         let target = this.graph.getNodesList().find(x => x.id == targetNode.id().toString());
 
         if (source != undefined && target != undefined) {
-            this.graph.edges.push(new Edge(source, target));
+            this.graph.addEdge(new PZotEdge(source, target));
         }
     }
 
@@ -845,15 +731,16 @@ export class PZotGraphEngine {
         }
 
         if (this.resource) {
-            this.resource.graphToDependecies(this.graph);
+            //TODO
+            //this.resource.graphToDependecies(this.graph);
         }
     }
 
-    private addEdge(edge: Edge): void {
-        this.graph.edges.push(edge);
+    private addEdge(edge: PZotEdge): void {
+        this.graph.addEdge(edge);
     }
 
-    private addNode(node: Node): void {
+    private addNode(node: PZotNode): void {
         let duplicate = false;
         this.graph.getNodesList().forEach(item => {
             if (item.period == node.period && item.label == node.label) {
@@ -862,7 +749,7 @@ export class PZotGraphEngine {
         });
 
         if (!duplicate) {
-            node.id = this.nodeCount.toString();
+            node.id = this.nodeCount;
             this.nodeCount ++;
 
             if (node.period > this.maxPeriod) {
@@ -872,15 +759,7 @@ export class PZotGraphEngine {
                 this.minPeriod = node.period;
             }
 
-            if (!this.graph.nodes.has(node.period.toString())) {
-                this.graph.nodes.set(node.period.toString(), new Map<string, Node>());
-            }
-            
-            let nodesByPeriod = this.graph.nodes.get(node.period.toString());
-            if (nodesByPeriod) {
-                nodesByPeriod.set(node.label, node);
-                this.graph.isDirty = true;
-            }  
+            this.graph.addNode(node);
         }
     }
 
@@ -889,7 +768,7 @@ export class PZotGraphEngine {
         this.minPeriod = 0;
         this.nodeCount = 0;
 
-        this.graph.clear();
+        //this.graph.clear();
 
         console.log("3. Graph data clear")
     }
@@ -902,8 +781,8 @@ export class PZotGraphEngine {
     
     private getMaxNodesInPeriods(){
         let max = 0;
-        for(let i = 0; i < this.periods; i++){
-            let nodesInPeriod = this.graph.nodes.get(i.toString());
+        for(let i = 0; i < this.graph.periods; i++){
+            let nodesInPeriod = this.graph.getNodesInPeriod(i.toString());
             if(nodesInPeriod != undefined){
                 max = Math.max(nodesInPeriod.size, max);
             }
