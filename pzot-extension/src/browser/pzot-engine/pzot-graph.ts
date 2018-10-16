@@ -258,9 +258,9 @@ export class PZotGraph {
         this.isDirty = true;
     }
 
-    public toDepFormula() {
-        // let dependecies = "";
-        // let mainNodes = new Array<PZotGraphItem>();
+    public toDepFormula():string {
+        let dependecies = "";
+        let mainNodes = this.getNodesList();
 
         // this.nodes.forEach(nodeContainer => {
         //     nodeContainer.forEach(node => {
@@ -278,22 +278,24 @@ export class PZotGraph {
         //     }
         // });
 
-        // if (mainNodes.length > 0) {
-        //     if (mainNodes.length > 1) {
-        //         dependecies = "(&& ";
+        if (mainNodes.length > 0) {
+            if (mainNodes.length > 1) {
+                dependecies = "(&& ";
 
-        //         mainNodes.forEach(node => {
-        //             dependecies = dependecies + this.pzotGraphItemToDependendency(node);
-        //         });
+                mainNodes.forEach(node => {
+                    dependecies = dependecies + node.toDependendency();
+                });
 
-        //         dependecies = dependecies + ")";
-        //     } else {
-        //         dependecies = this.pzotGraphItemToDependendency(mainNodes[0]);
-        //     }
+                dependecies = dependecies + ")";
+            } else {
+                dependecies = mainNodes[0].toDependendency();
+            }
 
-        //     this.updatingDeps = true;
-        //     this.updateDependencies(dependecies);
-        // }
+            //this.updatingDeps = true;
+            //this.updateDependencies(dependecies);
+        }
+
+        return dependecies;
     }
 
     public toString() {

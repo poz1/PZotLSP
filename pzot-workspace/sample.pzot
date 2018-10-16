@@ -1,2 +1,2 @@
-DEPENDENCIES: (&& (dep (-p- a)(next (-p- b))) (dep(next (-p- b))(next(next(-p- c)))))
+DEPENDENCIES: (&& (dep (-p- a)(next (-p- b))) (dep(yesterday (-p- b))(next(next(-p- c)))))
 FORMULA: (&& (= (zot-p (-p- a)) 0.5)(= (zot-p (-p- b)) 0.6))

@@ -132,29 +132,7 @@ export class PZotGraphResource implements Resource {
 
    
 
-    //TODO move to graph class
-    // public pzotGraphItemToDependendency(source: PZotGraphItem): string {
-    //     let dependecy = "(dep " + this.pzotGraphItemToLitteral(source);
-
-    //     source.getDependencies().forEach(child => {
-    //         dependecy = dependecy + this.pzotGraphItemToLitteral(child);
-    //     });
-
-    //     return dependecy + ")";
-    // }
-
-    // public pzotGraphItemToLitteral(source: PZotGraphItem): string {
-    //     let litteral = "(-p- " + source.label + ")";
-    //     let yn = "";
-        
-    //     source.period < 0 ? yn = "yesterday" : yn = "next";
-        
-    //     for (let index = Math.abs(source.period); index > 0; index --) {
-    //         litteral = "(" + yn + " " + litteral + ")";
-    //     }
-
-    //     return litteral;
-    // }
+   
 
     
 

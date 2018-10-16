@@ -424,6 +424,8 @@ export class PZotGraphEngine {
             this.populateGraph(graph);
         }
         this.layoutGraph();
+
+        Logger.log(this.graph.toDepFormula());
     }
 
     /**
@@ -661,7 +663,7 @@ export class PZotGraphEngine {
         // if (!this.isNormalizedMode) { 
         //     this.graph.getNodesList()[node.id()].period += this.minPeriod;
         // }
-        
+
         // TODO: bottoncino
         // this.updateDependecies();
     }

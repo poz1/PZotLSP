@@ -47,13 +47,30 @@ export class PZotNode {
         this.period += offset;
     }
 
-    // public toPZotGraphItem(): PZotGraphItem {
-    //     let node = new PZotGraphItem("undefined");
-    //     node.id = this.id;
-    //     node.label = this.label;
-    //     node.period = this.period;
-    //     return node;
-    // }
+    public toDependendency(): string {
+        if(this.dependencies.length > 0){
+            let dependecy = "(dep " + this.toLitteral();
+
+            this.dependencies.forEach(dep => {
+                dependecy = dependecy + (dep.toLitteral());
+            });
+
+            return dependecy + ")";
+        } else return "";
+    }
+
+    public toLitteral(): string {
+        let litteral = "(-p- " + this.label + ")";
+        let yn = "";
+        
+        this.period < 0 ? yn = "yesterday" : yn = "next";
+        
+        for (let index = Math.abs(this.period); index > 0; index --) {
+            litteral = "(" + yn + " " + litteral + ")";
+        }
+
+        return litteral;
+    }
 
     public toString():string {
        return("Node: " + this.label + " ID: " + this.id + " Period: " + this.period + " isParent: " + this.isParent);
