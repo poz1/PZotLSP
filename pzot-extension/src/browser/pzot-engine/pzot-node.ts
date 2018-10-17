@@ -2,9 +2,7 @@ export class PZotNode {
     public label: string = "";
     public id: number;
     public period: number;
-    //Do we need this?
-    public isParent: boolean;
-
+    
     public periodUpperBound = 0;
     public periodLowerBound = 0;
     
@@ -99,6 +97,6 @@ export class PZotNode {
     * @returns A string containing all the details about the node.
     */
     public toString():string {
-       return("Node: " + this.label + " ID: " + this.id + " Period: " + this.period + " isParent: " + this.isParent);
+       return("Node: " + this.label + " ID: " + this.id + " Period: " + this.period);
     }
 }
