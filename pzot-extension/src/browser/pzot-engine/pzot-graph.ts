@@ -12,7 +12,7 @@ export class PZotGraph {
     private nodesList = new Array<PZotNode>();
 
     //Nodes are indexed by period and label. Map<period, Map<label, node>>
-    private nodes = new Map<string, Map<string, PZotNode>>();
+    private nodes = new Map<number, Map<string, PZotNode>>();
     private edges = new Array<PZotEdge>();
     private isDirty = true;
     public periodUpperBound = 0;
@@ -84,13 +84,13 @@ export class PZotGraph {
     }
 
     public addNode(node: PZotNode) : PZotNode{
-        let nodesByPeriod = this.nodes.get(node.period.toString());
+        let nodesByPeriod = this.nodes.get(node.period);
 
         if (!nodesByPeriod) {
-            this.nodes.set(node.period.toString(), new Map<string, PZotNode>());
+            this.nodes.set(node.period, new Map<string, PZotNode>());
         }
 
-        nodesByPeriod = this.nodes.get(node.period.toString());
+        nodesByPeriod = this.nodes.get(node.period);
         if (nodesByPeriod) {
             let temp = nodesByPeriod.get(node.label);
             //Duplicate node check
@@ -124,46 +124,62 @@ export class PZotGraph {
         if (this.periodUpperBound >= 0 && this.periodLowerBound <= 0)
             this.periods++;
 
-        let nodesInPeriod = this.nodes.get(node.period.toString());
+        let nodesInPeriod = this.nodes.get(node.period);
         if(nodesInPeriod)
             this.maxNodesInPeriod = Math.max(this.maxNodesInPeriod, nodesInPeriod.size);
     }
+
+
 
     public getNodesList(): Array<PZotNode> {
         this.forceUpdate();
         return this.nodesList;
     }
 
-    public getNode(period: string, label: string): PZotNode | undefined {
+    public getNode(period: number, label: string): PZotNode | undefined {
         let nodesByPeriod = this.nodes.get(period);
         if (nodesByPeriod) {
-            return nodesByPeriod.get(label);
+            let node = nodesByPeriod.get(label);
+            if(node){
+                return node;
+            } else {
+                Logger.log("No node with " + label + " in graph");
+                Logger.log(this.toString());
+            }
+        } else {
+            Logger.log("No period " + period + " in graph");
+            Logger.log(this.toString());
         }
     }
 
-    public getNodesInPeriod(period: string): Map<string, PZotNode> | undefined {
+    public getNodesInPeriod(period: number): Map<string, PZotNode> | undefined {
         return this.nodes.get(period);
     }
 
     /**
      * renameNode
      */
-    public renameNode(period: string, label: string, newLabel: string) {
+    public renameNode(period: number, label: string, newLabel: string) {
         let nodesByPeriod = this.nodes.get(period);
         if (nodesByPeriod) {
             let node = nodesByPeriod.get(label);
 
             if (node) {
+                this.removeNode(node.period, node.label);
                 node.label = newLabel;
+                this.addNode(node);
                 this.isDirty = true;
             }
+        } else {
+            Logger.log("No node found in " + period + " with label " + label);
+            Logger.log(this.toString());
         }
     }
 
     /**
      * updateNodePeriod
      */
-    public updateNodePeriod(label: string, period: string, newPeriod: number) {
+    public updateNodePeriod(label: string, period: number, newPeriod: number) {
         this.forceUpdate();
 
         Logger.log("updating node " + label + " from " + period + " to " + newPeriod);
@@ -228,12 +244,17 @@ export class PZotGraph {
         return this.edges.push(edge);
     }
 
-    public removeNode(period: string, label: string): void {
+    public removeNode(period: number, label: string): void {
         let nodesByPeriod = this.nodes.get(period);
         if (nodesByPeriod) {
             nodesByPeriod.delete(label);
             this.isDirty = true;
+        } else {
+            Logger.log("No period " + period + " in graph");
+            Logger.log(this.toString());
         }
+
+        //TODO need to compute period removal
     }
 
     public removeEdge(source: PZotNode, target: PZotNode): void {
@@ -250,7 +271,7 @@ export class PZotGraph {
     }
 
     public clear() {
-        this.nodes = new Map<string, Map<string, PZotNode>>();
+        this.nodes = new Map<number, Map<string, PZotNode>>();
         this.edges = new Array<PZotEdge>();
         this.isDirty = true;
     }
@@ -277,12 +298,12 @@ export class PZotGraph {
         return dependecies;
     }
 
-    public toString() {
-        Logger.log("Graph lowerbound: " + this.periodLowerBound + " upperbound: " + this.periodUpperBound);
+    public toString():string {
+        let result = "Graph lowerbound: " + this.periodLowerBound + " upperbound: " + this.periodUpperBound);
         let periods = this.nodes.keys();
 
         for (let period of periods) {
-            Logger.log("Period: " + period + " contains: ");
+            result = result + ("Period: " + period + " contains: ");
             let nodesMap = this.nodes.get(period);
 
             if (nodesMap) {
@@ -290,13 +311,15 @@ export class PZotGraph {
                 for (let node of nodes) {
                     let nodeObj = nodesMap.get(node);
                     if (nodeObj)
-                        Logger.log(nodeObj.toString());
+                        result = result + (nodeObj.toString());
                 }
             }
         }
 
         this.edges.forEach(edge => {
-            Logger.log(edge.toString());
+            result = result + (edge.toString());
         });
+
+        return result;
     }
 }

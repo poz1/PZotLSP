@@ -285,7 +285,7 @@ export class PZotGraphLayout {
                         // image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
                         selector: '',
                         coreAsWell: true,
-                        onClickFunction: this.addGraphNode.bind(this)
+                        onClickFunction: this.addNode.bind(this)
                     },
                     {
                         id: 'compute-formula',
@@ -348,9 +348,14 @@ export class PZotGraphLayout {
         this.graph = graph;
         Logger.log("New Graph!");
 
-        this.clear();
-        this.populateGraph(graph);
+       this.loadGraph();
+    }
 
+    private loadGraph() {
+        this.clear();
+        this.populateGraph(this.graph);
+
+        Logger.log("Loading graph: ");
         Logger.log(this.graph.toDepFormula());
     }
 
@@ -388,7 +393,7 @@ export class PZotGraphLayout {
             data: {
                 id: node.id, label: node.label,
                 period: node.period, isParent: node.isParent
-            }, selectable: false
+            }, selectable: false, id : node.id
         });
         Logger.log("Layout - Added node: " + node.label + " with ID: " + node.id + " in period: " + node.period);
     }
@@ -466,11 +471,11 @@ export class PZotGraphLayout {
         let lowerBound = canvas.height - fontSize;
         let periodWidth = (this.canvasWidth) / (this.graph.periods);
 
-        for (let index = 0; index < this.graph.periods; index++) {
+        for (let index = 0, period = this.graph.periodLowerBound; index < this.graph.periods; index++, period++) {
             // Draw text label for each period
             ctx.font = fontSize + "px Helvetica";
             ctx.fillStyle = "white";
-            ctx.fillText(index, this.margin + ((periodWidth * (index + 1)) - (periodWidth / 2)), lowerBound);
+            ctx.fillText(period, this.margin + ((periodWidth * (index + 1)) - (periodWidth / 2)), lowerBound);
 
             //Draw separator line for each period
             ctx.beginPath();
@@ -495,40 +500,40 @@ export class PZotGraphLayout {
 
     //#region Layout Interaction methods
 
-    private addNode(node: PZotNode): void {
-        // let duplicate = false;
-        // this.graph.getNodesList().forEach(item => {
-        //     if (item.period == node.period && item.label == node.label) {
-        //         duplicate = true;
-        //     }
-        // });
+    /**
+    * Adds a new node to the graph and to the layout. Default label is equal to "New Node + id"
+    */
+    private addNode(event: cytoscape.EventObject) {
+        let node = new PZotNode();
 
-        // if (!duplicate) {
-        //     node.id = this.nodeCount;
-        //     this.nodeCount ++;
+        //shoud be fixed layout variable 
+        let periodSize = (this.width / this.graph.periods);
 
-        //     if (node.period > this.maxPeriod) {
-        //         this.maxPeriod = node.period;
-        //     }
-        //     if (node.period < this.minPeriod) {
-        //         this.minPeriod = node.period;
-        //     }
+        node.period = Math.floor((event.position.x) / periodSize);
+        //Temp label, user will probably change it. (Or not, we don't care)
+        node.label = "New Node " + (this.graph.nodeCount + 1);
 
-        //     this.graph.addNode(node);
-        // }
-        Logger.log("New node: " + node.toString());
+        //Add the new node to the graph data structure
+        this.graph.addNode(node);
 
+        //Add the new node to the layout 
+        //(we do not want to rebuild all the layout for just one node)
+        this.addCytoscapeNode(node);
+
+        this.renderGraph();
+
+        Logger.log("Updating graph with new node: " + node.toString());
     }
 
     /**
-     * renameGraphNode
-     */
+    * Adds a new node to the graph and to the layout. Default label is equal to "New Node + id"
+    */
     private renameNode(event: cytoscape.EventObject) {
-        Logger.log("editLabel!" + event.target);
-        let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
-        if (event.target) {
+        if (event.target.isNode())
+        {        
+            let node = this.graph.getNode(event.target.data("period"), event.target.data("label"));
             try {
-                if (target) {
+                if (node) {
 
                     let popupContainer = document.createElement('div');
                     popupContainer.className = "popup-container";
@@ -541,14 +546,15 @@ export class PZotGraphLayout {
                     let dismissButton = document.createElement('button');
                     dismissButton.innerHTML = 'Dismiss';
 
-                    let id = target.period + ":%:" + target.label;
-                    labelInput.value = target.label;
+                    let id = node.id.toString();
+                    labelInput.value = node.label;
 
                     let popper = event.target.popper({
                         content: () => {
                             applyButton.id = id;
+                            
                             applyButton.onclick = this.changeNodeName.bind(this);
-
+                            
                             dismissButton.id = id;
                             dismissButton.onclick = this.dismissPopup.bind(this);
 
@@ -571,6 +577,8 @@ export class PZotGraphLayout {
                     this.cytoscapeEngine.on('pan zoom resize', update);
 
                     this.popups.set(id, new Popup(popper, popupContainer, labelInput));
+                } else {
+                    Logger.log("No node found in " + event.target.data("period") + " with label " + event.target.data("label"));
                 }
             } catch (error) {
                 Logger.log("popper error: " + error);
@@ -578,17 +586,20 @@ export class PZotGraphLayout {
         }
     }
 
-    private deleteNode(node: PZotNode) {
-        this.graph.removeNode(node.period.toString(), node.label);
-    }
-
     private changeNodeName(ev: MouseEvent) {
         let button = ev.target as HTMLButtonElement;
         let popup = this.popups.get(button.id);
 
         if (popup) {
-            let info = button.id.split(":%:");
-            this.graph.renameNode(info[0], info[1], popup.getLabel())
+            let id = parseInt(button.id);
+            let newLabel = popup.getLabel();
+            let node = this.cytoscapeEngine.getElementById(id);
+
+            //Update Graph data structure
+            this.graph.renameNode(node.data("period"), node.data("label"), newLabel);
+            //Update Graph Layout
+            node.data("label", popup.getLabel());
+            
             popup.dismiss();
             this.renderGraph();
         }
@@ -600,8 +611,14 @@ export class PZotGraphLayout {
 
         if (popup) {
             popup.dismiss();
-            this.renderGraph();
+            //this.renderGraph();
         }
+    }
+
+    private deleteNode(node: PZotNode) {
+        //Deleting node from Data Structure
+        this.graph.removeNode(node.period, node.label);
+        this.cytoscapeEngine.remove(this.cytoscapeEngine.getElementById(node.id));
     }
 
     /**
@@ -609,10 +626,9 @@ export class PZotGraphLayout {
      */
     private deleteGraphElement(event: cytoscape.EventObject) {
         if (event.target.isNode()) {
-            let target = this.graph.getNodesList().find(x => x.id == event.target.id().toString());
-            Logger.log(target);
-            if (target != undefined) {
-                this.graph.removeNode(target.period.toString(), target.label);
+            let node = this.graph.getNode(event.target.data("period"), event.target.data("label"));
+            if(node){
+                this.deleteNode(node);
             }
         }
 
@@ -628,30 +644,7 @@ export class PZotGraphLayout {
     }
 
 
-    /**
-     * createNewNode
-     */
-    private addGraphNode(event: cytoscape.EventObject) {
-        let node = new PZotNode();
 
-        //shoud be fixed layout variable 
-        let periodSize = (this.width / this.graph.periods);
-
-        node.period = Math.floor((event.position.x) / periodSize);
-        //Temp label, user will probably change it. (Or not, we don't care)
-        node.label = "New Node " + (this.graph.nodeCount + 1);
-
-        //Add the new node to the graph data structure
-        this.graph.addNode(node);
-
-        //Add the new node to the layout 
-        //(we do not want to rebuild all the layout for just one node)
-        this.addCytoscapeNode(node);
-
-        this.renderGraph();
-
-        Logger.log("Updating graph with new node: " + node.toString());
-    }
 
     private onNodeDragged(event: cytoscape.EventObject) {
         let node = event.target;
