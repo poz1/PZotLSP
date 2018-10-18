@@ -502,7 +502,7 @@ export class PZotGraphLayout {
             ctx.stroke();
         }
     }
-    
+
     //#endregion
 
     //#region Layout Interaction methods
@@ -662,7 +662,7 @@ export class PZotGraphLayout {
             this.updateNodePeriod(node, nodeLabel, nodePeriod, newPeriod);
             //Updating Data Structure
             this.graph.updateNodePeriod(nodeLabel, nodePeriod, newPeriod);
-            
+
             this.renderGraph();
         }
     }
@@ -671,15 +671,37 @@ export class PZotGraphLayout {
     * We update the node period chechink if the new period already contains a node with the same label.
     * In this case we merge the two.
     */
-    private updateNodePeriod(node:any, nodeLabel:string, nodePeriod:number, newPeriod:number) {
+    private updateNodePeriod(node: any, nodeLabel: string, nodePeriod: number, newPeriod: number) {
         let duplicate = this.graph.getNode(newPeriod, nodeLabel);
-        
-        //No duplicate would be present if we move the node
-        if(!duplicate)
+
+        //No duplicate would be present if we move the node,
+        //just update the period
+        if (!duplicate)
             node.data("period", newPeriod);
-        else {
-            //We need to convert any edge if present to refer to the already present node and delete the new one
+        else {            
+            this.moveEdges(node, this.cytoscapeEngine.getElementById(duplicate.id));
+            //Deleting node from Layout, all the related edges are automatically deleted
+            this.cytoscapeEngine.remove(node);
         }
+    }
+
+    private moveEdges(source: cytoscape.NodeSingular, target:cytoscape.NodeSingular) {
+                    //We need to convert any edge if present to refer to the already present node and delete the new one
+                    if (source.degree(false) != 0) {
+                        Logger.log("Moving a node to a period where it would be duplicate!");
+                        let nodeEdges = source.connectedEdges() as cytoscape.EdgeCollection;
+                        nodeEdges.forEach(edge => {
+                            Logger.log("Edge to be reshaped: From " + edge.source().id() + " to " + edge.target().id());
+                            if (edge.source().id() == source.id()) {
+                                this.addEdge(new PZotEdge(parseInt(target.id()), parseInt(edge.target().id())));
+                                Logger.log("Adding edge: From " + parseInt(target.id()) + " to " + parseInt(edge.target().id()));
+                            } 
+                            if (edge.target().id() == source.id() ) {
+                                this.addEdge(new PZotEdge(parseInt(edge.source().id()), parseInt(target.id())));
+                                Logger.log("Adding edge: From " + parseInt(edge.source().id()) + " to " + parseInt(target.id()));
+                            }
+                        });
+                    }
     }
     /**
     * Deletes the edge from the data structure and from the layout
@@ -697,9 +719,16 @@ export class PZotGraphLayout {
             this.graph.removeEdge(source.id, target.id);
             //Deleting node from Layout
             this.cytoscapeEngine.remove(cytoElement.target);
-            
+
             this.renderGraph();
         }
+    }
+
+    private addEdge(edge: PZotEdge) {
+        //Adding edge in Data Structure 
+        this.graph.addEdge(edge);
+        //Adding edge in Layout
+        this.addCytoscapeEdge(edge);
     }
 
     private onNewEdge(sourceCY: any, targetCY: any, addedEles: any) {
@@ -708,7 +737,7 @@ export class PZotGraphLayout {
 
         if (source && target) {
             //Adding edge in Data Structure (the layout auto-generates it)
-            this.graph.addEdge(new PZotEdge(source, target));
+            this.graph.addEdge(new PZotEdge(source.id, target.id));
         }
     }
 

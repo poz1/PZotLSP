@@ -9,15 +9,15 @@ export class PZotGraph {
     public nodeCount = 0;
     public periodUpperBound = 0;
     public periodLowerBound = 0;
-  
+
 
     //Nodes are indexed by period and label. Map<period, Map<label, node>>
     private nodes = new Map<number, Map<string, PZotNode>>();
     private edges = new Array<PZotEdge>();
-    
+
     private isDirty = true;
     private nodesList = new Array<PZotNode>();
-    
+
     private idCount = 0;
 
     public constructor(dependencyFormula: string) {
@@ -62,7 +62,7 @@ export class PZotGraph {
 
                     if (element != "") {
                         let target = this.addNode(new PZotNode(element));
-                        this.addEdge(new PZotEdge(mainNode, target));
+                        this.addEdge(new PZotEdge(mainNode.id, target.id));
                         mainNode.addDependency(target);
                     }
                 };
@@ -169,19 +169,14 @@ export class PZotGraph {
      * renameNode
      */
     public renameNode(period: number, label: string, newLabel: string) {
-        let nodesByPeriod = this.nodes.get(period);
-        if (nodesByPeriod) {
-            let node = nodesByPeriod.get(label);
+        let node = this.getNode(period, label)
 
-            if (node) {
-                this.removeNode(node.period, node.label);
-                node.label = newLabel;
-                this.addNode(node);
-                this.isDirty = true;
-            }
-        } else {
-            Logger.log("No node found in " + period + " with label " + label);
-            Logger.log(this.toString());
+        if (node) {
+            //mi perdo gli edges!
+            this.removeNode(node.period, node.label);
+            node.label = newLabel;
+            this.addNode(node);
+            this.isDirty = true;
         }
     }
 
@@ -266,7 +261,7 @@ export class PZotGraph {
                 //We eliminate the period as it's empty from the collection
                 this.nodes.delete(period);
             }
-           
+
             this.isDirty = true;
         } else {
             Logger.log("No period " + period + " in graph");
@@ -275,9 +270,9 @@ export class PZotGraph {
     }
 
     private removeRelatedEdges(node?: PZotNode) {
-        if(node){
+        if (node) {
             let relatedEdges = new Array<PZotEdge>();
-           
+
             relatedEdges = relatedEdges.concat(this.getEdge(node));
             relatedEdges = relatedEdges.concat(this.getEdge(undefined, node));
 

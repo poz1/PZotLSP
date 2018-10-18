@@ -4,9 +4,9 @@ export class PZotEdge {
     source: number;
     target: number;
 
-    constructor(source: PZotNode, target: PZotNode) {
-        this.source = source.id;
-        this.target = target.id;
+    constructor(source: number, target: number) {
+        this.source = source;
+        this.target = target;
     }
 
     public toString():string {
