@@ -751,16 +751,13 @@ export class PZotGraphLayout {
     }
 
     private updateDependeciesFormula() {
-        // if (this.isNormalizedMode) {
-        //     this.normalizePeriods( - this.minPeriod);
-        //     this.isNormalizedMode = false;
-        // }
-
         if (this.resource) {
-            let formula = this.graph.toString();
+            let formula = this.graph.toDepFormula();
+            Logger.log("Updating document with graph: \n" + this.graph.toString() + "\n");
             Logger.log("Updating document with dependency formula: " + formula);
             //this.resource.updateDependencies(formula);
-            Logger.log("JSON: " + this.cytoscapeEngine.json());
+            Logger.log("\nJSON: ");
+            Logger.log(this.cytoscapeEngine.json());
 
         }
     }

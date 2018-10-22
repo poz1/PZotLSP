@@ -1,20 +1,11 @@
-import { number } from "prop-types";
+import { Logger } from "../../debug";
 
 export class PZotNode {
     public label: string = "";
     public id: number;
     public period: number;
     
-    public periodUpperBound = 0;
-    public periodLowerBound = 0;
-    
-    // //Array of the nodes reachable from this node thorugh an edge
-    // public stratingEdges = new Array<number>();
-    // //Array of the nodes that can reach this node thorugh an edge
-    // public endingEdges = new Array<number>();
-
-    //TODO we can store just the ID of the node
-    private dependencies = new Array<PZotNode>();
+    private dependencies = new Set<number>();
 
     /**
     * Creates a new node instance starting from a PZot formula of a litteral
@@ -39,49 +30,27 @@ export class PZotNode {
 
             this.label = formula;
             this.period = n - p;
-
-            this.periodUpperBound = this.period;
-            this.periodLowerBound = this.period;
         }
     }
 
+    //TODO we can use just the node ID
     /**
     * Add a new dependency (in the form of a node) to the node
     * @param node  The node that we want to depend on this one.
     */
-    public addDependency(node: PZotNode) {
-        this.dependencies.push(node)
+    public addDependency(nodeID: number) {
+        Logger.log("Added dep: " + nodeID + " to: " + this.id);
 
-        if (node.period > this.periodUpperBound) {
-            this.periodUpperBound = node.period;
-        }
-
-        if (node.period < this.periodLowerBound) {
-            this.periodLowerBound = node.period;
-        }
-    }
-
-    //mbho
-    public normalizePeriod(offset: number) {
-        this.period += offset;
+        this.dependencies.add(nodeID)
     }
 
     /**
-    * Transforms the node instance in a PZot formula with all his dependencies 
-    * @returns A string containing the PZot formula
+    * getDependencies
     */
-    public toDependendency(): string {
-        if(this.dependencies.length > 0){
-            let dependecy = "(dep " + this.toLitteral();
-
-            this.dependencies.forEach(dep => {
-                dependecy = dependecy + (dep.toLitteral());
-            });
-
-            return dependecy + ")";
-        } else return "";
+    public getDependencies(): Set<number> {
+        return this.dependencies;
     }
-
+   
     /**
     * Transforms the node instance in a PZot formula without his dependencies 
     * @returns A string containing the PZot formula
