@@ -29,7 +29,6 @@ class DSLContribution extends BaseLanguageServerContribution {
         super.onDidFailSpawnProcess(error);
         console.error("Error starting PZot language server.", error)
     }
-
 }
 
 

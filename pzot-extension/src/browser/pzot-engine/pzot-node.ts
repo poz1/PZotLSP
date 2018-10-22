@@ -1,3 +1,5 @@
+import { number } from "prop-types";
+
 export class PZotNode {
     public label: string = "";
     public id: number;
@@ -6,6 +8,11 @@ export class PZotNode {
     public periodUpperBound = 0;
     public periodLowerBound = 0;
     
+    // //Array of the nodes reachable from this node thorugh an edge
+    // public stratingEdges = new Array<number>();
+    // //Array of the nodes that can reach this node thorugh an edge
+    // public endingEdges = new Array<number>();
+
     //TODO we can store just the ID of the node
     private dependencies = new Array<PZotNode>();
 
