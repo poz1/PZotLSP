@@ -755,10 +755,10 @@ export class PZotGraphLayout {
             let formula = this.graph.toDepFormula();
             Logger.log("Updating document with graph: \n" + this.graph.toString() + "\n");
             Logger.log("Updating document with dependency formula: " + formula);
-            //this.resource.updateDependencies(formula);
             Logger.log("\nJSON: ");
             Logger.log(this.cytoscapeEngine.json());
 
+            this.resource.updateDependencies(formula);
         }
     }
 

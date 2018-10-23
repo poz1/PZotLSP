@@ -2,7 +2,7 @@ import { injectable, inject } from "inversify";
 import { ResourceResolver, Resource, ResourceProvider, DisposableCollection, Emitter, Event } from "@theia/core";
 import URI from "@theia/core/lib/common/uri";
 import { FileSystem } from '@theia/filesystem/lib/common';
-import { Workspace} from '@theia/languages/lib/browser';
+import { Workspace } from '@theia/languages/lib/browser';
 import { PZotUri } from "./pzot-uri";
 import { PZotGraphLayout } from "./pzot-graph-layout";
 import { PZotGraph } from "./pzot-engine/pzot-graph";
@@ -61,7 +61,7 @@ export class PZotGraphResource implements Resource {
         }
     }
 
-    public setGraph(graph:PZotGraph) {
+    public setGraph(graph: PZotGraph) {
         Logger.log("Changing Graph");
         this.engine.setGraph(graph);
     }
@@ -75,17 +75,17 @@ export class PZotGraphResource implements Resource {
     * ParseDependencies
     * @returns Dependencies Formula extrated from the document
     */
-    public parseDocument() : string  {
+    public parseDocument(): string {
         try {
             let dep = "";
             const document = this.workspace.textDocuments.find(document => document.uri === this.originalUri);
             if (document) {
                 let text = document.getText();
-                
+
                 if (text != null) {
                     let startTrim = text.indexOf("DEPENDENCIES:") + 13;
                     let endTrim = text.indexOf("FORMULA:") - 13;
-                    
+
                     this.formula = text.substr(endTrim + 13);
                     dep = dep + text.substr(startTrim, endTrim)
                 }
@@ -120,7 +120,7 @@ export class PZotGraphResourceResolver implements ResourceResolver {
     }
 
     protected layout: PZotGraphLayout | undefined;
-    
+
     protected getLayout(): PZotGraphLayout {
         if (!this.layout) {
             this.layout = new PZotGraphLayout();
