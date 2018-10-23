@@ -1,6 +1,6 @@
 {
     "mode": "modules",
-    "out": "./pzot-extension/doc",
+    "out": "./doc",
     "theme": "default",
     "ignoreCompilerErrors": "true",
     "experimentalDecorators": "true",

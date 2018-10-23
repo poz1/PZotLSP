@@ -33,7 +33,6 @@ export class PZotNode {
         }
     }
 
-    //TODO we can use just the node ID
     /**
     * Add a new dependency (in the form of a node) to the node
     * @param node  The node that we want to depend on this one.

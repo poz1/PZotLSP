@@ -206,13 +206,18 @@ export class PZotGraph {
         return this.nodesID.get(ID);
     }
 
-    public getNodesInPeriod(period: number): Map<string, PZotNode> | undefined {
-        return this.nodes.get(period);
-    }
+    // public getNodesInPeriod(period: number): Map<string, PZotNode> | undefined {
+    //     return this.nodes.get(period);
+    // }
 
     /**
-     * renameNode
-     */
+    * Changes the label attribute of a node.
+    * If another node with the same label is already present in the period 
+    * they are merged in one node with the edges of both
+    * @param period The node period
+    * @param label The node current label
+    * @param newLabel The node new label
+    */
     public renameNode(period: number, label: string, newLabel: string) {
         let node = this.getNode(period, label)
 
@@ -235,7 +240,12 @@ export class PZotGraph {
     }
 
     /**
-    * updateNodePeriod
+    * Changes the period attribute of a node.
+    * If another node with the same label is already present in the new period 
+    * they are merged in one node with the edges of both
+    * @param period The node period
+    * @param label The node current label
+    * @param newPeriod The node new period
     */
     public updateNodePeriod(label: string, period: number, newPeriod: number) {
         Logger.log("updating node " + label + " from " + period + " to " + newPeriod);
@@ -262,6 +272,13 @@ export class PZotGraph {
         }
     }
 
+    /**
+    * Returns the edge between two nodes. if used with onyly one parameter 
+    * returns all the nodes leaving/arriving to that node
+    * @param source The source node (optional)
+    * @param target The target node (optional)
+    * @returns Edge or Array of edges
+    */
     public getEdge(source?: PZotNode, target?: PZotNode): PZotEdge | Array<PZotEdge> {
         if (source && target) {
             this.edges.forEach(edge => {
@@ -292,10 +309,18 @@ export class PZotGraph {
         return result;
     }
 
+    /**
+    * Returns an Array containig all the edges
+    * @returns Array of all the edges
+    */
     public getEdges(): Array<PZotEdge> {
         return this.edges;
     }
 
+    /**
+    * Adds a new edge. If its duplicate or a loop gets ignored
+    * @param edge The edge to add
+    */
     public addEdge(edge: PZotEdge) {
         let duplicate = false;
         this.edges.forEach(element => {
@@ -313,6 +338,11 @@ export class PZotGraph {
         }
     }
 
+    /**
+    * removes a node and recalculates the graph period bounds
+    * @param period The node period
+    * @param label The node current label
+    */
     public removeNode(period: number, label: string): void {
         let node = this.getNode(period, label);
         let nodesByPeriod = this.nodes.get(period);
@@ -351,6 +381,11 @@ export class PZotGraph {
         }
     }
 
+
+    /**
+    * Removes all the starting/arriving edges from a node.
+    * @param node The node
+    */
     private removeRelatedEdges(node?: PZotNode) {
         if (node) {
             let relatedEdges = new Array<PZotEdge>();
@@ -364,6 +399,12 @@ export class PZotGraph {
         }
     }
 
+
+    /**
+    * Removes an edge.
+    * @param source The source node 
+    * @param target The target node 
+    */
     public removeEdge(source: number, target: number): void {
         Logger.log("Graph - Deleting edge from: " + source + " to: " + target);
 
@@ -379,12 +420,19 @@ export class PZotGraph {
         }
     }
 
+    /**
+    * Removes all nodes and all edges.
+    */
     public clear() {
         this.nodes = new Map<number, Map<string, PZotNode>>();
         this.edges = new Array<PZotEdge>();
         this.isDirty = true;
     }
 
+    /**
+    * Creates the Pot Dependency Formula.
+    * @returns The string containing the formula
+    */
     public toDepFormula(): string {
         let dependecies = "";
         let mainNodes = this.getNodesList();
@@ -409,7 +457,7 @@ export class PZotGraph {
     }
 
     /**
-   * Transforms the node instance in a PZot formula with all his dependencies 
+   * Transforms the graph instance in a PZot formula with all his dependencies 
    * @returns A string containing the PZot formula
    */
     public nodeToDependendency(node: PZotNode): string {
@@ -427,7 +475,10 @@ export class PZotGraph {
         } else return "";
     }
 
-
+    /**
+   * Transforms the graph instance in string with the most important parameters 
+   * @returns the string representation of the graph
+   */
     public toString(): string {
         let result = "Graph lowerbound: " + this.periodLowerBound + " upperbound: " + this.periodUpperBound;
         result = result + " maxNodes: " + this.maxNodesInPeriod + " nodeCount: " + this.nodeCount + "\n";

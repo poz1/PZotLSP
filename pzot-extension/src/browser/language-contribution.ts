@@ -2,6 +2,9 @@ import { injectable, inject } from 'inversify';
 import { Workspace, Languages, LanguageClientFactory, BaseLanguageClientContribution } from '@theia/languages/lib/browser';
 declare var monaco: any
 
+/**
+* Registers the extension and the params for the PZot Language
+*/
 @injectable()
 export class DslClientContribution extends BaseLanguageClientContribution {
 
@@ -26,6 +29,9 @@ export class DslClientContribution extends BaseLanguageClientContribution {
 // register language with monaco on first load
 registerDSL();
 
+/**
+* Sets the params of the Monaco Editor for the PZot Language
+*/
 export function registerDSL() {  
     // initialize monaco
     monaco.languages.register({
