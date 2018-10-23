@@ -41,4 +41,4 @@ Install dependencies (we use Yarn and Lerna to manage the packages)
   yarn doc
 ```
 
-Documentation is now available in pzot-extension/doc
+Documentation is now available in doc folder
