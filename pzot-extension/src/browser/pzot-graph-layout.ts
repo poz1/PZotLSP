@@ -41,17 +41,12 @@ export class PZotGraphLayout {
     private resource: PZotGraphResource | undefined;
     private graph: PZotGraph;
 
-    private width = 0;
-    private height = 0;
-
-    private isNormalizedMode = false;
+    //Margin to be left on the right/left side of the graph for new period generation
     private margin = 100;
 
     private cytoscapeEngine: any;
     private layout: any;
-    private mousetrap: any;
 
-    private contextMenu: any;
     private popups = new Map<string, Popup>();
 
     private canvasHeight = 0;
@@ -133,9 +128,7 @@ export class PZotGraphLayout {
     // }
 
     /**
-    * Creates the DOM element there the graph will be rendered
-    * @param resource  The resource that is initializating the container.
-    * @returns HTML code of the DOM container.
+    * Loads the settings for the Cytoscape Plugins
     */
     private initializeGraphEngine() {
         Logger.log("1.1 Initialiazing Graph Engine");
@@ -315,7 +308,7 @@ export class PZotGraphLayout {
                 ]
             };
 
-            this.contextMenu = this.cytoscapeEngine.contextMenus(menuOptions);
+            this.cytoscapeEngine.contextMenus(menuOptions);
 
             Logger.log("2. GraphEngineReady")
         }
@@ -330,7 +323,6 @@ export class PZotGraphLayout {
         this.cytoscapeEngine = undefined;
 
         this.resource = resource;
-        this.mousetrap = require('mousetrap');
 
         let container = document.createElement("div");
 
@@ -354,7 +346,8 @@ export class PZotGraphLayout {
     }
 
     /**
-    * EntryPoint!
+    * Set the graph to the layout
+    * @param graph  The PZot instance that we want to layout.
     */
     public setGraph(graph: PZotGraph) {
         if (!this.cytoscapeEngine) {
@@ -367,26 +360,14 @@ export class PZotGraphLayout {
         this.loadGraph();
     }
 
+    /**
+    * Cleans the Cytoscape internal data structure and layouts the internal PZotGraph graph 
+    */
     private loadGraph() {
         this.clear();
-        this.populateGraph(this.graph);
-
-        Logger.log("Loading graph: ");
-        Logger.log(this.graph.toDepFormula());
-    }
-
-    /**
-    * Creates the DOM element there the graph will be rendered
-    * @param resource  The resource that is initializating the container.
-    * @returns HTML code of the DOM container.
-    */
-    private populateGraph(graph: PZotGraph) {
-        //Whats the pourpose? 
-        //this.normalizePeriods(this.minPeriod);
-        //this.isNormalizedMode = true;
-
+        
         try {
-            let nodeList = graph.getNodesList();
+            let nodeList = this.graph.getNodesList();
 
             for (let index = 0; index < nodeList.length; index++) {
                 this.addCytoscapeNode(nodeList[index]);
@@ -397,15 +378,21 @@ export class PZotGraphLayout {
                 this.addCytoscapeEdge(edgeList[index]);
             }
 
-            //this.cytoscapeEngine.on('drag', 'node', this.onNodeDragged.bind(this));
             this.cytoscapeEngine.on('free', 'node', this.onNodeMoved.bind(this));
 
             Logger.log("5. Graph Population Completed");
         } catch (error) {
             Logger.log("Error during graph population: " + error);
         }
+
+        Logger.log("Loading graph: ");
+        Logger.log(this.graph.toDepFormula());
     }
 
+    /**
+    * Add a node to the Cytoscape internal data structure
+    * @param node  The PZot Node to be added
+    */
     private addCytoscapeNode(node: PZotNode) {
         this.cytoscapeEngine.add({
             data: {
@@ -416,22 +403,24 @@ export class PZotGraphLayout {
         Logger.log("Layout - Added node: " + node.label + " with ID: " + node.id + " in period: " + node.period);
     }
 
+    /**
+    * Add an edge to the Cytoscape internal data structure
+    * @param edge  The PZot Edge to be added
+    */
     private addCytoscapeEdge(edge: PZotEdge) {
         this.cytoscapeEngine.add({ data: { source: edge.source, target: edge.target }, selectable: false });
         Logger.log("Layout - Added edge from: " + edge.source + " to: " + edge.target);
     }
 
     /**
-    * Creates the DOM element there the graph will be rendered
+    * Renders the layout using the cytoscape internal data structure.
+    * Use setGraph before this item to load another graph to the internal data structure
     */
     public renderGraph() {
         if (this.cytoscapeEngine) {
             let element = document.getElementById('timeline');
 
             if (element != null) {
-                this.width = element.scrollWidth;
-                this.height = element.scrollHeight;
-
                 this.cytoscapeEngine.resize();
 
                 let gridOptions = {
@@ -464,6 +453,9 @@ export class PZotGraphLayout {
         }
     }
 
+    /**
+    * Renders the periods grid.
+    */
     private renderBackgroundGrid() {
         Logger.log("renderBackgorundGrid");
 
@@ -508,7 +500,10 @@ export class PZotGraphLayout {
     //#region Layout Interaction methods
 
     /**
-    * Adds a new node to the graph and to the layout. Default label is equal to "New Node + nodeCount"
+    * Adds a new node to the graph and to the layout. 
+    * Default label is equal to "New Node + nodeCount".
+    * It is fired by the click on the AddNode contextual menu
+    * @param event  The click event
     */
     private addNode(event: cytoscape.EventObject) {
         let node = new PZotNode();
@@ -535,6 +530,7 @@ export class PZotGraphLayout {
 
     /**
     * Fired upon renaming request from user, creates a popup asking for the new label
+    * @param event  The click event
     */
     private onRenameNode(event: cytoscape.EventObject) {
         if (event.target.isNode()) {
@@ -595,6 +591,7 @@ export class PZotGraphLayout {
 
     /**
     * Assigns the new label to the node in the data structure and in the layout
+    * @param event  The click event on rename popup. It contains the node ID to be renamed
     */
     private renameNode(ev: MouseEvent) {
         let button = ev.target as HTMLButtonElement;
@@ -624,6 +621,7 @@ export class PZotGraphLayout {
 
     /**
     * Closes the popup
+    * @param event  The click event on rename popup. 
     */
     private dismissPopup(ev: MouseEvent) {
         let button = ev.target as HTMLButtonElement;
@@ -636,7 +634,9 @@ export class PZotGraphLayout {
 
     /**
     * Deletes the node in the data structure and in the layout
-    */
+    * It is fired by the click on the DeleteNode contextual menu
+    * @param cytoElement The click event
+    * */
     private deleteNode(cytoElement: any) {
         let node = this.graph.getNode(cytoElement.target.data("period"), cytoElement.target.data("label"));
         if (node) {
@@ -651,7 +651,8 @@ export class PZotGraphLayout {
     }
 
     /**
-    * Fired when a node is moved in the layout by the user
+    * Fired when a node is moved (and released) in the layout by the user
+    * @param event The free event
     */
     private onNodeMoved(event: cytoscape.EventObject) {
         let node = event.target;
@@ -676,8 +677,12 @@ export class PZotGraphLayout {
     }
 
     /**
-    * We update the node period chechink if the new period already contains a node with the same label.
+    * We update the node period checkink if the new period already contains a node with the same label.
     * In this case we merge the two.
+    * @param node Cytoscape instance of the node to be updated
+    * @param nodeLabel Label of the node to be updated
+    * @param nodePeriod Current period of the node to be updated
+    * @param nodeLabel New period of the node to be updated
     */
     private updateNodePeriod(node: any, nodeLabel: string, nodePeriod: number, newPeriod: number) {
         let duplicate = this.graph.getNode(newPeriod, nodeLabel);
@@ -693,6 +698,12 @@ export class PZotGraphLayout {
         }
     }
 
+    /**
+    * Takes the edges leaving and coming to and edge and adds them to another node.
+    * Used to merge two conflitting nodes.
+    * @param source Cytoscape instance of the node where to take the edges from
+    * @param target Cytoscape instance of the node where to add the edges 
+    */
     private moveEdges(source: cytoscape.NodeSingular, target: cytoscape.NodeSingular) {
         //We need to convert any edge if present to refer to the already present node and delete the new one
         if (source.degree(false) != 0) {
@@ -713,7 +724,8 @@ export class PZotGraphLayout {
     }
 
     /**
-    * Deletes the edge from the data structure and from the layout
+    * Deletes the edge from the data structure and from the layout.
+    * @param cytoElement Cytoscape instance of the edge
     */
     private deleteEdge(cytoElement: any) {
         let sourceCY = this.cytoscapeEngine.getElementById(cytoElement.target.data("source"));
@@ -733,6 +745,10 @@ export class PZotGraphLayout {
         }
     }
 
+    /**
+    * Adds the edge to the data structure and to the layout.
+    * @param edge PZotEdge instance of the edge
+    */
     private addEdge(edge: PZotEdge) {
         //Adding edge in Data Structure 
         this.graph.addEdge(edge);
@@ -740,6 +756,12 @@ export class PZotGraphLayout {
         this.addCytoscapeEdge(edge);
     }
 
+    /**
+    * Adds the edge to the data structure.
+    * Since it is fired by the layout there is no need to add it also there.
+    * @param sourceCY Cytoscape instance of the node to be used as source
+    * @param targetCY Cytoscape instance of the node to be used as source
+    */
     private onNewEdge(sourceCY: any, targetCY: any, addedEles: any) {
         let source = this.graph.getNode(sourceCY.data("period"), sourceCY.data("label"));
         let target = this.graph.getNode(targetCY.data("period"), targetCY.data("label"));
@@ -750,6 +772,9 @@ export class PZotGraphLayout {
         }
     }
 
+    /**
+    * Generates the Dpeendency formula starting from the represented graph and updates the document
+    */
     private updateDependeciesFormula() {
         if (this.resource) {
             let formula = this.graph.toDepFormula();
@@ -762,6 +787,9 @@ export class PZotGraphLayout {
         }
     }
 
+    /**
+    * Clears the Cytoscape internal data structure
+    */
     private clear() {
         this.cytoscapeEngine.elements().remove();
         Logger.log("3.1 Layout clear")

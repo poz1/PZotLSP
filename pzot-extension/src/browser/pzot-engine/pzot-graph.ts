@@ -3,13 +3,13 @@ import { PZotNode } from "./pzot-node";
 import { Logger } from "../../debug";
 
 export class PZotGraph {
-
+    //Number of periods represented by the graph
     public periodCount: number;
+    //Number nodes in the most populated period 
     public maxNodesInPeriod = 0;
     public nodeCount = 0;
     public periodUpperBound = 0;
     public periodLowerBound = 0;
-
 
     //TODO replace with id instead of node 
     //Nodes are indexed by period and label. Map<period, Map<label, node>>
@@ -18,6 +18,7 @@ export class PZotGraph {
 
     private edges = new Array<PZotEdge>();
 
+    //Used to regenerate the nodes list only if it is necessary
     private isDirty = true;
     private nodesList = new Array<PZotNode>();
 
@@ -28,7 +29,11 @@ export class PZotGraph {
         this.parseDependencies(dependencyFormula);
         this.toString();
     }
-
+    
+    /**
+    * Reads the Dependency formula and creates nodes and edges
+    * @param text The Dependency Formula
+    */
     private parseDependencies(text: string) {
         let input = text.replace(/\s|[\r\n]+/gm, "");
         let operators = input.match(/(?=\()\W\w+|(?=\()\W\W\W/g);
@@ -51,6 +56,10 @@ export class PZotGraph {
         }
     }
 
+    /**
+    * Reads the Dependency formula and creates nodes and edges
+    * @param text The Dependency Formula
+    */
     private parseDependency(text: string) {
         Logger.log("1: Parsing : " + text);
 
@@ -73,21 +82,11 @@ export class PZotGraph {
         }
     }
 
-    private forceUpdate() {
-        let result = new Array<PZotNode>();
-
-        // if (this.isDirty) {
-        this.nodes.forEach(period => {
-            period.forEach(node => {
-                result.push(node);
-            });
-        });
-
-        this.nodesList = result;
-        this.isDirty = false;
-        // }
-    }
-
+   
+    /**
+    * Add a node to the data structure
+    * @param node  The PZot Node to be added
+    */
     public addNode(node: PZotNode): PZotNode {
         let nodesByPeriod = this.nodes.get(node.period);
 
@@ -122,6 +121,11 @@ export class PZotGraph {
         return node;
     }
 
+
+    /**
+    * Computes the graph bounds after the insertion of a new node
+    * @param node  The PZot Node to be added
+    */
     private updateGraphBounds(node: PZotNode) {
         this.periodUpperBound = Math.max(node.period, this.periodUpperBound);
         this.periodLowerBound = Math.min(node.period, this.periodLowerBound);
@@ -133,6 +137,9 @@ export class PZotGraph {
             this.maxNodesInPeriod = Math.max(this.maxNodesInPeriod, nodesInPeriod.size);
     }
 
+    /**
+    * Computes the number of period used in the graph
+    */
     private computePeriodCount() {
         this.periodCount = Math.abs(this.periodUpperBound - this.periodLowerBound) + 1;
 
@@ -144,11 +151,33 @@ export class PZotGraph {
         }
     }
 
+    /**
+    * Return the nodes as an unordered array
+    * @returns Array of nodes.
+    */
     public getNodesList(): Array<PZotNode> {
-        this.forceUpdate();
+        let result = new Array<PZotNode>();
+
+        // if (this.isDirty) {
+        this.nodes.forEach(period => {
+            period.forEach(node => {
+                result.push(node);
+            });
+        });
+
+        this.nodesList = result;
+        this.isDirty = false;
+        // }
         return this.nodesList;
     }
-
+    
+    /**
+    * Return a specific node using period and label
+    * Use getNodeByID instead of this if possible 
+    * @param period  The period of the node
+    * @param label The label of the node
+    * @returns If the node is found returns it.
+    */
     public getNode(period: number, label: string): PZotNode | undefined {
         let nodesByPeriod = this.nodes.get(period);
         if (nodesByPeriod) {
@@ -166,9 +195,12 @@ export class PZotGraph {
     }
 
     /**
-    * getNodeByID
+    * Return a specific node using the id.
+    * Use this instead of Period/label combo if possible 
+    * @param ID  The id of the node
+    * @returns If the node is found returns it.
     */
-    public getNodeByID(ID: number) {
+    public getNodeByID(ID: number) :PZotNode | undefined {
         Logger.log("node ids");
         Logger.log(this.nodesID);
         return this.nodesID.get(ID);
@@ -372,7 +404,7 @@ export class PZotGraph {
         } else if (mainNodes.length = 1) {
             dependecies = this.nodeToDependendency(mainNodes[0]);
         }
-        
+
         return dependecies;
     }
 
